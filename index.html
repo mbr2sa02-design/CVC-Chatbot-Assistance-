@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CVC Assistant</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#e8641b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CVC Assistant">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f1ed;--card:#fff;--ink:#23201d;--mute:#6b645d;--line:#e2dcd4;--brand:#e8641b;--bot:#ece6de}
+@media (prefers-color-scheme:dark){:root{--bg:#1b1917;--card:#252220;--ink:#f1ece6;--mute:#a79f96;--line:#3a3532;--bot:#332e2b}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Noto Sans Khmer",system-ui,sans-serif;display:flex;justify-content:center;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+.wrap{width:100%;max-width:560px;height:100%;display:flex;flex-direction:column;padding:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin:auto 0}
+h1{font-size:1.15rem;margin:0 0 4px}p.s{color:var(--mute);margin:0 0 14px;font-size:.9rem}
+input{width:100%;font:inherit;padding:12px;margin-bottom:10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+button{font:inherit;font-weight:600;border:0;border-radius:8px;background:var(--brand);color:#fff;padding:12px 18px;cursor:pointer}
+button:disabled{opacity:.5}
+.top{display:flex;align-items:center;gap:8px;padding:6px 4px 10px}.top b{flex:1}
+.top button{background:none;color:var(--mute);border:1px solid var(--line);padding:6px 10px;font-weight:400}
+#log{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:6px 2px}
+.m{max-width:88%;padding:10px 13px;border-radius:16px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.me{align-self:flex-end;background:var(--brand);color:#fff;border-bottom-right-radius:4px}
+.bot{align-self:flex-start;background:var(--bot);border-bottom-left-radius:4px}
+.bot a{color:var(--brand);font-weight:600;word-break:break-all}
+form.in{display:flex;gap:8px;padding-top:8px;align-items:flex-end}
+form.in textarea{flex:1;font:inherit;padding:12px;margin:0;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);resize:none;max-height:140px;line-height:1.4}
+#mic{background:var(--card);color:var(--ink);border:1px solid var(--line);font-size:1.4rem;line-height:1;width:52px;height:52px;padding:0;border-radius:50%;flex:none}
+#mic.on{background:#c0392b;color:#fff;border-color:#c0392b;animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(192,57,43,.25)}}
+#rec{display:none;align-items:center;gap:8px;padding:8px 10px;margin-top:8px;border:1px solid var(--line);border-radius:10px;background:var(--bot)}
+#rec span{flex:1}#rec button{padding:8px 12px;font-size:.9rem}
+#rec button.x{background:none;color:var(--mute);border:1px solid var(--line);font-weight:400}
+.menu{display:flex;flex-direction:column;gap:6px;white-space:normal}
+.menu .mh{font-weight:600;margin-bottom:2px}
+.menu button{background:var(--card);color:var(--ink);border:1px solid var(--line);font-weight:400;text-align:left;padding:10px 12px;line-height:1.4}
+.optrow button.act{background:var(--bot);color:var(--ink);border-color:var(--line)}
+.optrow{display:flex;flex-wrap:wrap;gap:6px;padding:2px}
+.optrow button{background:var(--card);color:var(--brand);border:1px solid var(--brand);border-radius:10px;padding:8px 12px;font-weight:600;font-size:.9rem;line-height:1.3;text-align:left}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:6px 2px 0}
+.chips button{background:none;color:var(--brand);border:1px solid var(--line);padding:6px 10px;font-weight:400;font-size:.85rem;border-radius:16px}
+#err{color:#c0392b;font-size:.9rem;min-height:1.2em;margin:0 0 8px}
+.hide{display:none}
+.spk{display:block;margin-top:6px;padding:3px 10px;font-size:.85rem;font-weight:400;background:none;color:var(--mute);border:1px solid var(--line);border-radius:12px;cursor:pointer}
+.spk.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="login" class="card">
+    <h1>ជំនួយការ CVC / CVC Assistant</h1>
+    <p class="s">ចូលដោយប្រើគណនីដែលផ្តល់ឱ្យ / Sign in with your dashboard username and PIN</p>
+    <input id="u" placeholder="ឈ្មោះអ្នកប្រើ / Username" autocomplete="username" autocapitalize="none">
+    <input id="p" type="password" placeholder="កូដ PIN / PIN" autocomplete="current-password">
+    <p id="err"></p>
+    <button id="go" style="width:100%">ចូល / Sign in</button>
+  </div>
+
+  <div id="chat" class="hide" style="display:none;flex:1;flex-direction:column;min-height:0">
+    <div class="top"><b>ជំនួយការ CVC</b><span id="who" class="s" style="margin:0"></span><button id="vol" type="button" aria-label="អានចម្លើយដោយស្វ័យប្រវត្តិ / Auto-read replies" title="Auto-read replies">🔇</button><button id="out">ចេញ / Sign out</button></div>
+    <div id="log" aria-live="polite"></div>
+    <div class="chips" id="chips">
+      <button type="button" data-wv="1">🌍 អំពីអង្គការទស្សនៈពិភពលោក</button>
+      <button type="button" data-t="ជួយសរសេរសារទៅអ្នកឧបត្ថម្ភអំពី៖ ">✍️ សរសេរសារ</button>
+      <button type="button" data-t="កុមាររបស់ខ្ញុំ" data-send="1">👥 កុមាររបស់ខ្ញុំ</button>
+    </div>
+    <div id="rec"><span id="recmsg"></span><button type="button" id="recok">✔ បញ្ចប់</button><button type="button" id="recx" class="x">✖ បោះបង់</button></div>
+    <form class="in" id="f"><textarea id="q" rows="1" autocomplete="off" placeholder="សួរ ឬបិទភ្ជាប់អត្ថបទ… / Ask or paste text…"></textarea><button type="button" id="mic" aria-label="និយាយ / Speak">🎤</button><button id="send">ផ្ញើ</button></form>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycby6lMmY6vBkCxNvjkscQVjnJYlYnPXiqPB3NMfPBuEgC9LiClKdF_rwMS833w_SPmmsTg/exec';
+const $ = id => document.getElementById(id);
+let token = null;
+let chatHist = [];   // only general-helper turns (translate/summarize); child answers are never kept or sent back
+try { token = sessionStorage.getItem('cvc_t'); } catch (e) {}
+
+async function call(body) {
+  const r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(Object.assign({ token }, body)) });
+  const t = await r.text();
+  try { return JSON.parse(t); } catch (e) { throw new Error('Not JSON: ' + t.slice(0, 80)); }
+}
+function show(chat) {
+  $('login').style.display = chat ? 'none' : '';
+  $('chat').style.display = chat ? 'flex' : 'none';
+}
+// Turns [label](https://...) into safe clickable links; everything else stays plain text.
+function fill(el, text) {
+  el.textContent = '';
+  const re = /\[([^\]]+)\]\((https:\/\/[^)\s]+|sso:rcmon)\)/g; let i = 0, m;
+  while ((m = re.exec(text))) {
+    el.appendChild(document.createTextNode(text.slice(i, m.index)));
+    const a = document.createElement('a'); a.textContent = m[1];
+    if (m[2] === 'sso:rcmon') { a.href = '#'; a.onclick = openMonitor; }
+    else { a.href = m[2]; a.target = '_blank'; a.rel = 'noopener'; }
+    el.appendChild(a); i = re.lastIndex;
+  }
+  el.appendChild(document.createTextNode(text.slice(i)));
+}
+// Opens RC Monitoring already signed in: asks the server for a one-time link (valid 2 minutes).
+async function openMonitor(e) {
+  e.preventDefault();
+  const w = window.open('', '_blank'); // opened first so phone browsers don't block it
+  try {
+    const d = await call({ action: 'sso' });
+    if (d.ok && d.url) { if (w) w.location.href = d.url; else location.href = d.url; return; }
+    throw new Error(d.message || 'failed');
+  } catch (err) { if (w) w.close(); alert('Cannot open RC Monitoring. Please try again.'); }
+}
+function add(cls, text) {
+  const d = document.createElement('div');
+  d.className = 'm ' + cls; fill(d, text);
+  if (cls === 'bot' && text.length > 3) addSpk(d, text);
+  $('log').appendChild(d); $('log').scrollTop = 1e9; return d;
+}
+function signedIn(name) {
+  show(true); $('who').textContent = name || '';
+  if (!$('log').children.length) add('bot', 'សួស្តី! ខ្ញុំជាជំនួយការ CVC។ ខ្ញុំអាចជួយអ្នកបាន៖\n\n👤 រកព័ត៌មានកុមារ — វាយឈ្មោះ ឬលេខ RC\n👥 មើលកុមារក្នុងតំបន់របស់អ្នក — វាយឈ្មោះ CVC ឬ «កុមាររបស់ខ្ញុំ»\n📍 បើកទីតាំង និង 📋 ប្រព័ន្ធតាមដាន RC\n🎤 និយាយជំនួសការវាយ — ចុចប៊ូតុងមីក្រូហ្វូន\n🔊 ស្តាប់ចម្លើយ — ចុចប៊ូតុង 🔊 ក្រោមសារ\n🌍 ស្វែងយល់អំពីអង្គការទស្សនៈពិភពលោក — ចុចប៊ូតុងខាងក្រោម\n✍️ ជួយសរសេរ ឬកែសម្រួលសារ និងលិខិតជូនអ្នកឧបត្ថម្ភ\n💡 ពន្យល់ពាក្យ ឬឆ្លើយសំណួរទូទៅអំពីការងារ\n\nចុចប៊ូតុងខាងក្រោម ឬវាយសំណួររបស់អ្នក។\nសូមកុំបញ្ចូលព័ត៌មានផ្ទាល់ខ្លួនរបស់កុមារ ក្នុងសំណួរទូទៅ។');
+}
+function signOut(msg) {
+  stopRec(true); stopSpeak();
+  if (token) call({ action: 'logout' }).catch(() => {});
+  token = null; try { sessionStorage.removeItem('cvc_t'); } catch (e) {}
+  $('log').innerHTML = ''; chatHist = []; $('p').value = ''; $('err').textContent = msg || ''; show(false);
+}
+
+$('go').onclick = async () => {
+  $('err').textContent = ''; $('go').disabled = true;
+  try {
+    const d = await call({ action: 'login', username: $('u').value, password: $('p').value, token: null });
+    if (d.ok) { token = d.token; try { sessionStorage.setItem('cvc_t', token); } catch (e) {} $('p').value = ''; signedIn(d.name); }
+    else $('err').textContent = d.message || 'Sign in failed.';
+  } catch (e) { $('err').textContent = 'Cannot connect: ' + e.message; }
+  $('go').disabled = false;
+};
+$('p').addEventListener('keydown', e => { if (e.key === 'Enter') $('go').click(); });
+$('out').onclick = () => signOut();
+
+$('f').onsubmit = async e => {
+  e.preventDefault();
+  const q = $('q').value.trim(); if (!q) return;
+  stopSpeak(); unlockTts();
+  const oldOpt = $('optrow'); if (oldOpt) oldOpt.remove();
+  add('me', q); $('q').value = ''; $('q').style.height = 'auto'; $('send').disabled = true;
+  const w = add('bot', '…');
+  try {
+    const d = await call({ action: 'ask', question: q, history: chatHist.slice(-6) });
+    if (d.error === 'SESSION') { signOut(d.message); return; }
+    const ans = d.answer || d.message || 'No answer.';
+    fill(w, ans);
+    if (d.options || d.choices) { showOpts(d); }                      // child answers: pills, never read aloud
+    else { addSpk(w, ans); if (autoSpeak || viaMic) speak(ans); }
+    viaMic = false;
+    if (d.mode === 'chat') { chatHist.push({ r: 'user', t: q }, { r: 'model', t: ans }); if (chatHist.length > 12) chatHist.splice(0, chatHist.length - 12); }
+  } catch (err) { w.textContent = 'Connection error. Try again.'; }
+  $('send').disabled = false; $('q').focus();
+};
+
+const grow = () => { const q = $('q'); q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 140) + 'px'; };
+$('q').addEventListener('input', grow);
+$('q').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('f').requestSubmit(); } });
+$('chips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.wv) { add('me', 'អំពីអង្គការទស្សនៈពិភពលោក'); wvMenu('សូមជ្រើសរើសសំណួរដែលអ្នកចង់ដឹង៖'); return; }
+  $('q').value = b.dataset.t; grow(); $('q').focus();
+  if (b.dataset.send) $('f').requestSubmit();
+});
+
+/* ---------------- child pills: pick what to see instead of showing everything ---------------- */
+function optRow(items, onPick, actions, key) {
+  const old = $('optrow'); if (old) old.remove();
+  const d = document.createElement('div'); d.id = 'optrow'; d.className = 'optrow';
+  items.forEach(it => { const b = document.createElement('button'); b.type = 'button'; b.textContent = it.label; b.onclick = () => onPick(it); d.appendChild(b); });
+  (actions || []).forEach(a => {   // Location + RCM Form (Report / Close)
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'act'; b.textContent = a.label;
+    b.onclick = a.url ? () => window.open(a.url, '_blank', 'noopener') : () => openRcm(key, a.rcm);
+    d.appendChild(b);
+  });
+  $('log').appendChild(d); $('log').scrollTop = 1e9;
+}
+function showOpts(d) {
+  if (d.options && d.options.length) optRow(d.options, it => childAsk(d.key, it.id), d.actions, d.key);
+  else if (d.choices && d.choices.length) optRow(d.choices, it => childAsk(it.key, 'menu'));
+}
+// Opens the dashboard's RCM form for this child, already signed in (one-time link, valid 2 minutes).
+async function openRcm(key, type) {
+  const w = window.open('', '_blank');   // opened first so phone browsers don't block it
+  try {
+    const d = await call({ action: 'sso', target: 'rcm', key, type });
+    if (d.ok && d.url) { if (w) w.location.href = d.url; else location.href = d.url; return; }
+    throw new Error(d.message || 'failed');
+  } catch (err) { if (w) w.close(); alert('មិនអាចបើកទម្រង់ RCM បានទេ សូមព្យាយាមម្តងទៀត។\nCannot open the RCM form. Please try again.'); }
+}
+async function childAsk(key, section) {
+  stopSpeak();
+  const old = $('optrow'); if (old) old.remove();
+  const w = document.createElement('div'); w.className = 'm bot'; w.textContent = '…';   // no read-aloud button: child details are never spoken
+  $('log').appendChild(w); $('log').scrollTop = 1e9;
+  try {
+    const d = await call({ action: 'child', key, section });
+    if (d.error === 'SESSION') { signOut(d.message); return; }
+    fill(w, d.answer || d.message || 'រកមិនឃើញទេ។');
+    showOpts(d);
+  } catch (err) { w.textContent = 'មានបញ្ហា សូមព្យាយាមម្តងទៀត។'; }
+}
+
+/* ---------------- About World Vision: fixed questions and answers (no server call, no Gemini quota) ---------------- */
+const WV_LINK = '\n\nព័ត៌មានបន្ថែម / More: [wvi.org](https://www.wvi.org/about-us)';
+const WV = [
+  { q: '🌟 ចក្ខុវិស័យរបស់ទស្សនៈពិភពលោកជាអ្វី?', a: [
+    '🌟 ចក្ខុវិស័យ (Vision)',
+    '',
+    'សម្រាប់កុមារគ្រប់រូប មានជីវិតដ៏បរិបូរណ៍។',
+    '(Our vision for every child, life in all its fullness.)',
+    '',
+    'ការអធិស្ឋានរបស់យើង៖ សម្រាប់ដួងចិត្តគ្រប់រូប មានឆន្ទៈធ្វើឱ្យវាកើតឡើង។',
+    '',
+    'ចំណុចសំខាន់៖',
+    '• ផ្តោតលើកុមារដែលងាយរងគ្រោះបំផុត ដើម្បីឱ្យពួកគេរួចផុតពីភាពក្រីក្រ និងមានជីវិតដ៏បរិបូរណ៍',
+    '• សេចក្តីប្រាថ្នាសម្រាប់កុមារ៖ មានសុខភាពល្អ ទទួលបានការអប់រំសម្រាប់ជីវិត ទទួលបានការថែរក្សា និងការការពារ ហើយដឹងពីសេចក្តីស្រឡាញ់របស់ព្រះ និងអ្នកជិតខាង',
+    '• ទស្សនៈពិភពលោកបម្រើមនុស្សគ្រប់រូប ដោយមិនប្រកាន់សាសនា ជាតិសាសន៍ ពូជសាសន៍ ឬភេទ'
+  ].join('\n') + WV_LINK },
+  { q: '🎯 បេសកកម្មរបស់ទស្សនៈពិភពលោកជាអ្វី?', a: [
+    '🎯 បេសកកម្ម (Mission)',
+    '',
+    'ទស្សនៈពិភពលោកជាភាពជាដៃគូអន្តរជាតិនៃគ្រីស្ទបរិស័ទ ដែលមានបេសកកម្មដើរតាមព្រះអម្ចាស់ និងព្រះសង្គ្រោះរបស់យើង គឺព្រះយេស៊ូវគ្រីស្ទ ក្នុងការធ្វើការជាមួយអ្នកក្រីក្រ និងអ្នកត្រូវគេជិះជាន់ ដើម្បីជំរុញការផ្លាស់ប្តូរមនុស្ស ស្វែងរកយុត្តិធម៌ និងធ្វើជាសាក្សីអំពីដំណឹងល្អនៃព្រះរាជ្យរបស់ព្រះ។',
+    '',
+    'យើងអនុវត្តបេសកកម្មនេះតាមរយៈការប្តេជ្ញាចិត្តរួមបញ្ចូលគ្នា ៖',
+    '• ការអភិវឌ្ឍដែលផ្លាស់ប្តូរជីវិត ផ្អែកលើសហគមន៍ និងស្ថិតស្ថេរ ដោយផ្តោតជាពិសេសលើតម្រូវការរបស់កុមារ',
+    '• ការជួយសង្គ្រោះបន្ទាន់ក្នុងគ្រាមហន្តរាយ',
+    '• ការជំរុញយុត្តិធម៌',
+    '• ការគាំទ្រព្រះវិហារក្នុងបេសកកម្មរបស់ខ្លួន',
+    '• ការលើកកម្ពស់ការយល់ដឹងរបស់សាធារណជន',
+    '• ការធ្វើជាសាក្សីអំពីព្រះយេស៊ូវគ្រីស្ទ'
+  ].join('\n') + WV_LINK },
+  { q: '💛 គុណតម្លៃស្នូលទាំង ៦ មានអ្វីខ្លះ?', a: [
+    '💛 គុណតម្លៃស្នូលទាំង ៦ (Core Values)',
+    '',
+    '1. យើងជាគ្រីស្ទបរិស័ទ — ជំនឿលើព្រះគ្រីស្ទជាចំណុចស្នូលនៃអត្តសញ្ញាណ និងការជំរុញចិត្តបម្រើរបស់យើង',
+    '2. យើងប្តេជ្ញាចិត្តចំពោះអ្នកក្រីក្រ — ធ្វើការជាមួយអ្នកក្រីក្រ និងអ្នកត្រូវគេជិះជាន់ ក្នុងការស្វែងរកយុត្តិធម៌ សន្តិភាព ការផ្សះផ្សា និងការព្យាបាលរបួស',
+    '3. យើងឱ្យតម្លៃមនុស្ស — គោរពសេចក្តីថ្លៃថ្នូរ និងតម្លៃរបស់មនុស្សគ្រប់រូប ដោយដាក់មនុស្សមុនលុយ រចនាសម្ព័ន្ធ និងប្រព័ន្ធ',
+    '4. យើងជាអ្នកគ្រប់គ្រងទ្រព្យ (Stewards) — ធនធានមិនមែនជារបស់យើងទេ ដូច្នេះយើងរក្សាស្តង់ដារវិជ្ជាជីវៈ និងគណនេយ្យភាពខ្ពស់',
+    '5. យើងជាដៃគូ — ធ្វើការជាមួយអ្នកក្រ ម្ចាស់ជំនួយ និងដៃគូផ្សេងៗ ដោយការគោរពគ្នាទៅវិញទៅមក',
+    '6. យើងឆ្លើយតប — ឆ្លើយតបនឹងគ្រាអាសន្នដែលគំរាមជីវិត ជាកន្លែងដែលការចូលរួមរបស់យើងអាចធ្វើឱ្យមានភាពខុសគ្នា',
+    '',
+    'គុណតម្លៃមិនអាចចេញជាច្បាប់បានទេ ត្រូវតែរស់នៅតាមវា។'
+  ].join('\n') + WV_LINK },
+  { q: '📜 ប្រវត្តិរបស់ទស្សនៈពិភពលោក', a: [
+    '📜 ប្រវត្តិរបស់ទស្សនៈពិភពលោក',
+    '',
+    '• ឆ្នាំ ១៩៤៧ — លោក Bob Pierce ជួបគ្រូម្នាក់នៅប្រទេសចិន ដែលថែរក្សាកុមារីម្នាក់ត្រូវគេបោះបង់ចោល។ លោកសន្យាផ្ញើប្រាក់រៀងរាល់ខែដើម្បីជួយ។ នេះជាចំណុចប្រែប្រួលសម្រាប់លោក',
+    '• ឆ្នាំ ១៩៥០ — ទស្សនៈពិភពលោកត្រូវបានបង្កើតឡើងដោយលោក Bob Pierce',
+    '• ឆ្នាំ ១៩៥៣ — កម្មវិធីឧបត្ថម្ភកុមារដំបូង ចាប់ផ្តើមដើម្បីជួយកុមារកំព្រារាប់សែននាក់ នៅចុងសង្គ្រាមកូរ៉េ',
+    '',
+    'នៅកម្ពុជា៖',
+    '• ឆ្នាំ ១៩៧០ — ចាប់ផ្តើមការងារនៅកម្ពុជា',
+    '• ឆ្នាំ ១៩៧៥ — កម្មវិធីត្រូវបិទ ដោយសារស្ថានភាពសង្គ្រាម',
+    '• ទសវត្សរ៍ ១៩៨០ — ត្រឡប់មកបន្តប្រតិបត្តិការនៅកម្ពុជាវិញ',
+    '• ចាប់ពីពាក់កណ្តាលទសវត្សរ៍ ១៩៩០ — កម្មវិធីអភិវឌ្ឍតាមតំបន់ (ADP) ដែលគាំទ្រដោយការឧបត្ថម្ភកុមារ ជួយសហគមន៍ឱ្យទទួលបានការអប់រំ និងសុខាភិបាលកាន់តែប្រសើរ ពង្រឹងជីវភាព សម្អាតមីន និងបង្កើតបរិស្ថានសុវត្ថិភាពសម្រាប់កុមារ',
+    '• ឆ្នាំ ២០២៦ — ខួបទី ៥៦ ឆ្នាំនៅកម្ពុជា ដោយបានវិនិយោគជាង ៦៥០ លានដុល្លារអាមេរិកសម្រាប់សុខុមាលភាពកុមារ'
+  ].join('\n') + '\n\nព័ត៌មានបន្ថែម / More: [wvi.org](https://www.wvi.org/about-us)' },
+  { q: '🏘️ តើគម្រោងត្រូវបានអនុវត្តយ៉ាងដូចម្តេច?', a: [
+    '🏘️ ការអនុវត្តគម្រោង',
+    '',
+    'ទស្សនៈពិភពលោកធ្វើការតាមវិធីសាស្ត្រផ្អែកលើសហគមន៍ តាមរយៈ «កម្មវិធីអភិវឌ្ឍតាមតំបន់» (Area Development Programme - ADP)៖',
+    '',
+    '1. វាយតម្លៃតម្រូវការ — បុគ្គលិកក្នុងតំបន់ធ្វើការជាមួយតំណាងសហគមន៍ អាជ្ញាធរមូលដ្ឋាន និងអង្គការដៃគូ',
+    '2. រៀបចំផែនការរួមគ្នា — ផែនការរយៈពេលវែង (ជាទូទៅប្រហែល ១៥ ឆ្នាំ) ផ្តោតលើសុខភាព ការអប់រំ ទឹកស្អាត ជីវភាព និងការការពារកុមារ',
+    '3. អនុវត្តជាមួយសហគមន៍ — សហគមន៍ជាអ្នកកំណត់អាទិភាព និងចូលរួមដោយផ្ទាល់',
+    '4. តាមដាន និងវាស់វែង — គម្រោងត្រូវបានវាស់វែងប្រៀបធៀបនឹងគោលដៅជាប្រចាំ',
+    '5. ភាពស្ថិតស្ថេរ — ធ្វើឱ្យសហគមន៍អាចបន្តដោយខ្លួនឯងបាន នៅពេលទស្សនៈពិភពលោកបញ្ចប់ការងារក្នុងតំបន់',
+    '',
+    'ប្រាក់ឧបត្ថម្ភពីអ្នកឧបត្ថម្ភជាច្រើនត្រូវបានប្រមូលរួម ដើម្បីផ្តល់ផលប្រយោជន៍ដល់កុមារ និងគ្រួសារទាំងមូលក្នុងសហគមន៍។',
+    '',
+    'ចំណាំ៖ នេះជាទិដ្ឋភាពទូទៅ។ សម្រាប់ព័ត៌មានលម្អិតអំពីគម្រោងក្នុងតំបន់របស់អ្នក សូមសួរអ្នកគ្រប់គ្រងកម្មវិធី។'
+  ].join('\n') + '\n\nព័ត៌មានបន្ថែម / More: [wvi.org](https://www.wvi.org/child-sponsorship)' },
+  { q: '🧒 តើការឧបត្ថម្ភកុមារដំណើរការយ៉ាងដូចម្តេច?', a: [
+    '🧒 ការឧបត្ថម្ភកុមារ (Child Sponsorship)',
+    '',
+    '• អ្នកឧបត្ថម្ភម្នាក់ភ្ជាប់ជាមួយកុមារម្នាក់ ហើយផ្តល់ជំនួយរៀងរាល់ខែ។ អ្នកឧបត្ថម្ភ និងកុមារអាចទំនាក់ទំនងគ្នាតាមរយៈលិខិត',
+    '• ប្រាក់ឧបត្ថម្ភត្រូវបានប្រមូលរួមជាមួយអ្នកឧបត្ថម្ភផ្សេងទៀតក្នុងសហគមន៍តែមួយ ហើយប្រើសម្រាប់កម្មវិធីអភិវឌ្ឍសហគមន៍ — មិនផ្តល់ជាសាច់ប្រាក់ផ្ទាល់ដល់កុមារ ឬគ្រួសារទេ',
+    '• ការជ្រើសរើសកុមារ — សហគមន៍ជ្រើសរើសកុមារដែលងាយរងគ្រោះបំផុត ហើយបុគ្គលិកផ្ទៀងផ្ទាត់បញ្ជីឈ្មោះ',
+    '• ការចូលរួមជាការស្ម័គ្រចិត្ត — គ្រួសារ និងកុមារសម្រេចចិត្តដោយខ្លួនឯងថាចូលរួមឬអត់ ជាទូទៅមួយគ្រួសារមួយកុមារ',
+    '• កុមារដែលបានចុះឈ្មោះ (RC) ជាតំណាងនៃកុមារទាំងអស់ក្នុងសហគមន៍',
+    '• ផលប្រយោជន៍ដល់សហគមន៍ទាំងមូល — ទស្សនៈពិភពលោកបញ្ជាក់ថា កុមារម្នាក់ដែលទទួលបានការឧបត្ថម្ភ ធ្វើឱ្យកុមារផ្សេងទៀតប្រហែលបួននាក់ទទួលបានផលប្រយោជន៍ផងដែរ'
+  ].join('\n') + '\n\nព័ត៌មានបន្ថែម / More: [wvi.org](https://www.wvi.org/child-sponsorship)' }
+];
+function wvMenu(title) {
+  const old = $('wvmenu'); if (old) old.remove();
+  const d = document.createElement('div'); d.id = 'wvmenu'; d.className = 'm bot menu';
+  const h = document.createElement('div'); h.className = 'mh'; h.textContent = title; d.appendChild(h);
+  WV.forEach(it => { const b = document.createElement('button'); b.type = 'button'; b.textContent = it.q; b.onclick = () => wvShow(it); d.appendChild(b); });
+  $('log').appendChild(d); $('log').scrollTop = 1e9;
+}
+function wvShow(it) {
+  add('me', it.q);
+  const a = add('bot', it.a);
+  wvMenu('ចង់ដឹងអ្វីទៀត?');
+  a.scrollIntoView({ block: 'start' });
+}
+
+/* ---------------- voice input: record -> 16 kHz WAV -> server transcribes -> text goes in the box ---------------- */
+let mr = null, chunks = [], stream = null, tick = null, t0 = 0, cancelled = false;
+const MAXSEC = 60;
+function recMsg(txt, keepButtons) {
+  $('rec').style.display = 'flex'; $('recmsg').textContent = txt;
+  $('recok').style.display = $('recx').style.display = keepButtons ? '' : 'none';
+}
+function recHide() { $('rec').style.display = 'none'; }
+function toWavBuffer(pcm, sr) {
+  const n = pcm.length, b = new ArrayBuffer(44 + n * 2), v = new DataView(b);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) { const s = Math.max(-1, Math.min(1, pcm[i])); v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true); }
+  return b;
+}
+async function blobToWav16k(blob) {
+  const AC = window.AudioContext || window.webkitAudioContext, ctx = new AC();
+  const raw = await blob.arrayBuffer();
+  const audio = await new Promise((res, rej) => ctx.decodeAudioData(raw, res, rej));
+  try { ctx.close(); } catch (e) {}
+  const sr = 16000, off = new OfflineAudioContext(1, Math.max(1, Math.ceil(audio.duration * sr)), sr);
+  const src = off.createBufferSource(); src.buffer = audio; src.connect(off.destination); src.start();
+  const out = await off.startRendering();
+  return toWavBuffer(out.getChannelData(0), sr);
+}
+function b64(buf) {
+  const u = new Uint8Array(buf); let s = '';
+  for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+async function startRec() {
+  if (!navigator.mediaDevices || !window.MediaRecorder) { recMsg('ឧបករណ៍នេះមិនគាំទ្រការថតសំឡេងទេ។ / Recording is not supported on this device.', false); setTimeout(recHide, 4000); return; }
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+  catch (e) { recMsg('សូមអនុញ្ញាតឱ្យប្រើមីក្រូហ្វូន ក្នុងការកំណត់កម្មវិធីរុករក។ / Please allow the microphone.', false); setTimeout(recHide, 5000); return; }
+  const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+  const mt = types.find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+  mr = mt ? new MediaRecorder(stream, { mimeType: mt }) : new MediaRecorder(stream);
+  chunks = []; cancelled = false;
+  mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  mr.onstop = onRecStop;
+  mr.start(); t0 = Date.now();
+  $('mic').classList.add('on'); $('mic').textContent = '⏹'; $('send').disabled = true;
+  const upd = () => {
+    const s = Math.floor((Date.now() - t0) / 1000);
+    recMsg('🔴 កំពុងថត… ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + ' — និយាយបានហើយ ចុច «បញ្ចប់»', true);
+    if (s >= MAXSEC) stopRec(false);
+  };
+  upd(); tick = setInterval(upd, 500);
+}
+function stopRec(cancel) {
+  cancelled = !!cancel; clearInterval(tick); tick = null;
+  if (mr && mr.state !== 'inactive') { try { mr.stop(); } catch (e) {} }
+  else if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  if (cancel) { recHide(); $('mic').classList.remove('on'); $('mic').textContent = '🎤'; $('send').disabled = false; }
+}
+async function onRecStop() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  $('mic').classList.remove('on'); $('mic').textContent = '🎤';
+  if (cancelled || !chunks.length) { recHide(); $('send').disabled = false; return; }
+  recMsg('⏳ កំពុងបម្លែងសំឡេងទៅជាអក្សរ… / Converting your voice to text…', false);
+  try {
+    const wav = await blobToWav16k(new Blob(chunks, { type: (mr && mr.mimeType) || 'audio/webm' }));
+    const d = await call({ action: 'transcribe', audio: b64(wav) });
+    if (d.error === 'SESSION') { signOut(d.message); return; }
+    const txt = (d.text || '').trim();
+    if (txt) {
+      const q = $('q'); q.value = (q.value ? q.value.trim() + ' ' : '') + txt; viaMic = true; grow(); q.focus(); recHide();
+    } else { recMsg('មិនឮច្បាស់ទេ សូមនិយាយម្តងទៀត។ / Could not hear clearly. Please try again.', false); setTimeout(recHide, 4000); }
+  } catch (e) { recMsg('មានបញ្ហា សូមព្យាយាមម្តងទៀត។ / Something went wrong. Please try again.', false); setTimeout(recHide, 4000); }
+  $('send').disabled = false;
+}
+$('mic').onclick = () => { if (mr && mr.state === 'recording') stopRec(false); else startRec(); };
+$('recok').onclick = () => stopRec(false);
+$('recx').onclick = () => stopRec(true);
+
+/* ---------------- read aloud: uses the phone's built-in voice; the text is NOT sent to any server ---------------- */
+const TTS = 'speechSynthesis' in window;
+let autoSpeak = false, viaMic = false, voices = [], ttsWarned = false, curBtn = null;
+try { autoSpeak = localStorage.getItem('cvc_auto') === '1'; } catch (e) {}
+function loadVoices() { voices = TTS ? speechSynthesis.getVoices() : []; }
+if (TTS) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+const isKm = s => (s.match(/[\u1780-\u17FF]/g) || []).length > s.replace(/\s/g, '').length * 0.3;
+function speakable(t) {
+  return t.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/https?:\/\/\S+/g, '')
+    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE0F}\u2022\u2192]/gu, ' ')
+    .replace(/\s[\u2014\u2013]\s/g, ', ').replace(/[|*_#>]+/g, ' ');
+}
+function splitSpeech(t) {
+  const out = [];
+  const cut = s => { while (s.length > 200) { let i = s.lastIndexOf(' ', 200); if (i < 60) i = 200; out.push(s.slice(0, i).trim()); s = s.slice(i); } if (s.trim()) out.push(s.trim()); };
+  t.split(/\n+/).forEach(line => { (line.match(/[^\u17D4.!?]+[\u17D4.!?]*/g) || []).forEach(s => { if (s.trim()) cut(s.trim()); }); });
+  return out.filter(s => /[\p{L}\p{N}]/u.test(s));
+}
+function pickVoice(km) {
+  const w = km ? 'km' : 'en', norm = v => v.lang.toLowerCase().replace('_', '-');
+  return voices.find(v => norm(v).startsWith(w + '-')) || voices.find(v => norm(v).startsWith(w)) || null;
+}
+function unlockTts() { try { if (TTS) speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch (e) {} }  // lets iPhone speak later
+function stopSpeak() { try { if (TTS) speechSynthesis.cancel(); } catch (e) {} if (curBtn) { curBtn.classList.remove('on'); curBtn = null; } }
+function speak(text, btn) {
+  if (!TTS) { recMsg('ឧបករណ៍នេះមិនគាំទ្រការអានសំឡេងទេ។ / Reading aloud is not supported on this device.', false); setTimeout(recHide, 4000); return; }
+  stopSpeak(); loadVoices();
+  const parts = splitSpeech(speakable(text)); let skipped = false, last = null;
+  parts.forEach(p => {
+    const km = isKm(p), v = pickVoice(km);
+    if (km && !v) { skipped = true; return; }
+    const u = new SpeechSynthesisUtterance(p); u.lang = km ? 'km-KH' : 'en-US'; u.rate = 0.95; if (v) u.voice = v;
+    speechSynthesis.speak(u); last = u;
+  });
+  if (btn && last) { curBtn = btn; btn.classList.add('on'); last.onend = last.onerror = () => { if (curBtn === btn) { btn.classList.remove('on'); curBtn = null; } }; }
+  if (skipped && !ttsWarned) {
+    ttsWarned = true;
+    recMsg('ទូរស័ព្ទនេះមិនមានសំឡេងខ្មែរទេ។ សូមដំឡើង «Speech Services by Google» ហើយទាញយកសំឡេងខ្មែរ។ / No Khmer voice on this phone. Install Google Speech Services and download the Khmer voice.', false);
+    setTimeout(recHide, 9000);
+  }
+}
+function addSpk(el, text) {
+  if (!TTS) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'spk'; b.textContent = '🔊 ស្តាប់ / Listen';
+  b.onclick = () => { if (curBtn === b) stopSpeak(); else speak(text, b); };
+  el.appendChild(b);
+}
+$('vol').textContent = autoSpeak ? '🔊' : '🔇';
+$('vol').onclick = () => {
+  autoSpeak = !autoSpeak; $('vol').textContent = autoSpeak ? '🔊' : '🔇';
+  try { localStorage.setItem('cvc_auto', autoSpeak ? '1' : '0'); } catch (e) {}
+  if (autoSpeak) unlockTts(); else stopSpeak();
+};
+
+if (token) signedIn('');
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
