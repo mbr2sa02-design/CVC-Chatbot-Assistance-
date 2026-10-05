@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CVC Assistant</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#e8641b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CVC Assistant">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f3ef;--bg2:#fff4ea;--card:#fff;--ink:#1f1b18;--mute:#7a7169;--line:#ece5dd;--brand:#e8641b;--brand2:#f58a3c;--bot:#fff;--glass:rgba(255,255,255,.82);--ok:#22a06b;--shadow:0 1px 2px rgba(31,27,24,.06),0 8px 24px rgba(31,27,24,.07)}
+@media (prefers-color-scheme:dark){:root{--bg:#131110;--bg2:#1d1815;--card:#1f1b19;--ink:#f3eee8;--mute:#a39a91;--line:#342f2b;--bot:#2a2522;--glass:rgba(31,27,25,.82);--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0}
+body{background:radial-gradient(1100px 520px at 50% -12%,var(--bg2),var(--bg));color:var(--ink);font-family:"Noto Sans Khmer","Inter",system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;justify-content:center;padding-top:env(safe-area-inset-top)}
+.wrap{width:100%;max-width:720px;height:100%;display:flex;flex-direction:column}
+button{font:inherit;font-weight:600;border:0;background:var(--brand);color:#fff;cursor:pointer}button:disabled{opacity:.5;cursor:default}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+/* login */
+.card{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:30px 22px 24px;margin:auto 14px;box-shadow:var(--shadow);text-align:center}
+.logo,.av{background:linear-gradient(135deg,var(--brand2),var(--brand));display:grid;place-items:center;color:#fff}
+.logo{width:104px;height:104px;border-radius:32px;margin:0 auto 14px;font-size:32px;box-shadow:0 12px 26px rgba(232,100,27,.35)}
+h1{font-size:1.25rem;margin:0 0 6px}p.s{color:var(--mute);margin:0 0 20px;font-size:.88rem;line-height:1.6}
+.fld{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:0 14px;margin-bottom:10px;text-align:left}
+.fld:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px rgba(232,100,27,.15)}
+.fld input{border:0;outline:0;background:transparent;color:var(--ink);font:inherit;padding:14px 0;width:100%}
+#err{color:#d23b2a;font-size:.88rem;min-height:1.3em;margin:2px 0 10px}
+#go{width:100%;border-radius:14px;padding:14px;font-weight:700;background:linear-gradient(135deg,var(--brand2),var(--brand));box-shadow:0 10px 22px rgba(232,100,27,.3)}
+/* chat shell */
+#chat{background:transparent}
+.top{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);position:relative;z-index:2}
+.av{width:48px;height:48px;border-radius:50%;font-size:20px;flex:none;box-shadow:0 6px 14px rgba(232,100,27,.3)}
+.ttl{flex:1;min-width:0}.ttl b{display:block;font-size:1.02rem;line-height:1.3}
+.ttl small{display:flex;align-items:center;gap:6px;color:var(--mute);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(34,160,107,.2);flex:none}
+#who:empty::before{content:"World Vision Cambodia"}
+.ib{width:40px;height:40px;border-radius:50%;padding:0;background:transparent;color:var(--mute);border:1px solid var(--line);font-size:1.05rem;display:grid;place-items:center;flex:none}
+.ib:hover{border-color:var(--brand);color:var(--brand)}.ib svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#log{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:18px 14px 8px;scroll-behavior:smooth;scrollbar-width:thin}
+.m{max-width:84%;padding:11px 15px;border-radius:20px;line-height:1.65;font-size:.97rem;white-space:pre-wrap;overflow-wrap:anywhere;animation:pop .24s ease-out both}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.me{align-self:flex-end;background:linear-gradient(135deg,var(--brand2),var(--brand));color:#fff;border-bottom-right-radius:6px;box-shadow:0 6px 16px rgba(232,100,27,.25)}
+.bot{align-self:flex-start;position:relative;margin-left:38px;background:var(--bot);border:1px solid var(--line);border-bottom-left-radius:6px;box-shadow:var(--shadow)}
+.bot::before{content:"";position:absolute;left:-38px;bottom:0;width:30px;height:30px;border-radius:50%;background:var(--avimg) center/cover no-repeat,linear-gradient(135deg,var(--brand2),var(--brand));box-shadow:0 2px 6px rgba(232,100,27,.3)}
+.bot a{color:var(--brand);font-weight:700;word-break:break-all;text-decoration:none;border-bottom:1.5px solid rgba(232,100,27,.35)}
+.m.typing{font-size:0;min-width:70px;padding:10px 16px;display:flex;align-items:center;justify-content:center}
+.m.typing::after{content:"•••";font-size:22px;letter-spacing:4px;line-height:1;color:var(--mute);animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+.spk{display:inline-flex;align-items:center;gap:4px;margin-top:8px;padding:5px 12px;font-size:.82rem;font-weight:500;background:transparent;color:var(--mute);border:1px solid var(--line);border-radius:999px}
+.spk.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.menu{display:flex;flex-direction:column;gap:8px;white-space:normal}.menu .mh{font-weight:700;margin-bottom:2px}
+.menu button{background:var(--bg);color:var(--ink);border:1px solid var(--line);font-weight:500;text-align:left;padding:11px 14px;line-height:1.45;border-radius:14px}
+.menu button:hover{border-color:var(--brand)}
+.optrow{display:flex;flex-wrap:wrap;gap:8px;padding:2px 2px 2px 38px;animation:pop .24s ease-out both}
+.optrow button{background:var(--card);color:var(--brand);border:1px solid rgba(232,100,27,.4);border-radius:999px;padding:8px 14px;font-weight:600;font-size:.87rem;line-height:1.35;text-align:left;box-shadow:var(--shadow)}
+.optrow button:hover{background:rgba(232,100,27,.08)}
+.optrow button.act{background:rgba(232,100,27,.1);color:var(--ink);border:1px solid var(--line);border-radius:14px;font-weight:600}
+/* human avatar: alive (blinks, breathes, pulses online ring, mouth moves while speaking) */
+.logo svg,.av svg{width:100%;height:100%;display:block;border-radius:inherit}
+.av{position:relative}
+/* 3D robot: floats, tilts, blinks, glows, waves, eyes follow the pointer, mouth + ears move when talking/listening */
+.robot{animation:bob 3s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-5px)}}
+.head{transform-origin:100px 126px;animation:tilt 5s ease-in-out infinite}@keyframes tilt{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+.shadow{transform-box:fill-box;transform-origin:center;animation:shd 3s ease-in-out infinite}@keyframes shd{50%{transform:scale(.8);opacity:.15}}
+.eye{transform-box:fill-box;transform-origin:center;animation:lid 3.8s infinite}@keyframes lid{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.eyes{transition:transform .12s ease-out}
+.mouth{transform-box:fill-box;transform-origin:50% 0}
+.talk .mouth{animation:talk .28s ease-in-out infinite alternate}@keyframes talk{to{transform:scaleY(2.1)}}
+.ball,.led{animation:glow 2s ease-in-out infinite}@keyframes glow{50%{opacity:.45}}
+.heart{transform-box:fill-box;transform-origin:center;animation:beat 1.2s ease-in-out infinite}@keyframes beat{50%{transform:scale(1.3)}}
+.ear{transform-box:fill-box;transform-origin:center}
+.talk .ear,.listen .ear{animation:earp .45s ease-in-out infinite alternate}@keyframes earp{to{transform:scaleY(1.18)}}
+.think .ball{animation:glow .45s infinite}.think .eyes{animation:scan 1.1s ease-in-out infinite}@keyframes scan{0%,100%{transform:translateX(-5px)}50%{transform:translateX(5px)}}
+.arm{transform-origin:152px 142px}.wave .arm{animation:wave 1.5s ease-in-out}
+@keyframes wave{0%,100%{transform:rotate(0)}12%{transform:rotate(-140deg)}28%{transform:rotate(-110deg)}44%{transform:rotate(-140deg)}60%{transform:rotate(-110deg)}76%{transform:rotate(-140deg)}}
+.av::before{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--ok);opacity:0;animation:ring 2.6s ease-out infinite;pointer-events:none}
+.av::after{content:"";position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;background:var(--ok);border:2px solid var(--card)}
+@keyframes ring{0%{transform:scale(.88);opacity:.55}100%{transform:scale(1.2);opacity:0}}
+#st::after{content:" · "}#st.tp::after{content:"… · "}
+/* titled data (child details): Title / Label : value */
+.m.kvm{white-space:normal}
+.kvm .kt{font-weight:700;color:var(--brand);margin:12px 0 4px;font-size:.95rem}.kvm .kt:first-child{margin-top:0}
+.kvm .kr{display:grid;grid-template-columns:minmax(90px,38%) 1fr;gap:2px 12px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.kvm .kr:last-child{border-bottom:0}
+.kvm .kk{color:var(--mute);font-size:.84rem;font-weight:600}.kvm .kvv{overflow-wrap:anywhere}
+.kvm .kp{margin:4px 0}
+.kvm table{border-collapse:collapse;width:100%;font-size:.88rem;display:block;overflow-x:auto;margin:6px 0}
+.kvm th{background:rgba(232,100,27,.1);text-align:left;padding:6px 8px;white-space:nowrap}
+.kvm td{padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
+/* quick chips + input */
+.chips{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding:8px 14px 4px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-weight:500;font-size:.86rem;white-space:nowrap;box-shadow:var(--shadow)}
+.chips button:hover{border-color:var(--brand)}
+#rec{display:none;align-items:center;gap:8px;padding:9px 12px;margin:6px 14px 0;border:1px solid var(--line);border-radius:16px;background:var(--bot);box-shadow:var(--shadow)}
+#rec span{flex:1;font-size:.9rem}#rec button{padding:8px 14px;font-size:.88rem;border-radius:999px}
+#rec button.x{background:none;color:var(--mute);border:1px solid var(--line);font-weight:500}
+form.in{padding:8px 14px calc(12px + env(safe-area-inset-bottom));margin:0}
+.box{display:flex;align-items:flex-end;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:28px;padding:6px 6px 6px 18px;box-shadow:var(--shadow);transition:border-color .15s,box-shadow .15s}
+.box:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px rgba(232,100,27,.15)}
+#q{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:inherit;resize:none;max-height:140px;line-height:1.5;padding:9px 0}
+#mic{width:42px;height:42px;border-radius:50%;padding:0;background:transparent;color:var(--mute);font-size:1.2rem;line-height:1;flex:none;display:grid;place-items:center}
+#mic:hover{background:rgba(232,100,27,.1)}
+#mic.on{background:#d23b2a;color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 9px rgba(210,59,42,.22)}}
+#send{width:42px;height:42px;border-radius:50%;padding:0;flex:none;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand2),var(--brand));box-shadow:0 6px 14px rgba(232,100,27,.32)}
+#send svg{width:19px;height:19px;fill:#fff}
+.hide{display:none}
+@media (min-width:760px){body{padding:20px}.wrap{max-width:760px}#chat{background:var(--glass);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);overflow:hidden}.top{border-radius:28px 28px 0 0}}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;scroll-behavior:auto !important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="login" class="card">
+    <div class="logo" data-av></div>
+    <h1>ជំនួយការ CVC</h1>
+    <p class="s">ចូលដោយប្រើឈ្មោះអ្នកប្រើ និងកូដ PIN របស់អ្នក<br>Sign in with your dashboard username and PIN</p>
+    <label class="fld"><span>👤</span><input id="u" placeholder="ឈ្មោះអ្នកប្រើ / Username" autocomplete="username" autocapitalize="none"></label>
+    <label class="fld"><span>🔒</span><input id="p" type="password" placeholder="កូដ PIN / PIN" autocomplete="current-password"></label>
+    <p id="err"></p>
+    <button id="go">ចូល / Sign in</button>
+  </div>
+
+  <div id="chat" class="hide" style="display:none;flex:1;flex-direction:column;min-height:0">
+    <div class="top">
+      <div class="av" data-av></div>
+      <div class="ttl"><b>ជំនួយការ CVC</b><small><i class="dot"></i><span id="st">កំពុងសកម្ម</span><span id="who"></span></small></div>
+      <button id="vol" class="ib" type="button" aria-label="អានចម្លើយដោយស្វ័យប្រវត្តិ / Auto-read replies" title="Auto-read replies">🔇</button>
+      <button id="out" class="ib" type="button" aria-label="ចេញ / Sign out" title="ចេញ / Sign out"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></button>
+    </div>
+    <div id="log" aria-live="polite"></div>
+    <div class="chips" id="chips">
+      <button type="button" data-wv="1">🌍 អំពីអង្គការទស្សនៈពិភពលោក</button>
+      <button type="button" data-t="ជួយសរសេរសារទៅអ្នកឧបត្ថម្ភអំពី៖ ">✍️ សរសេរសារ</button>
+      <button type="button" data-t="កុមាររបស់ខ្ញុំ" data-send="1">👥 កុមាររបស់ខ្ញុំ</button>
+    </div>
+    <div id="rec"><span id="recmsg"></span><button type="button" id="recok">✔ បញ្ចប់</button><button type="button" id="recx" class="x">✖ បោះបង់</button></div>
+    <form class="in" id="f"><div class="box"><textarea id="q" rows="1" autocomplete="off" placeholder="សួរ ឬបិទភ្ជាប់អត្ថបទ… / Ask or paste text…"></textarea><button type="button" id="mic" aria-label="និយាយ / Speak">🎤</button><button id="send" aria-label="ផ្ញើ / Send"><svg viewBox="0 0 24 24"><path d="M3.4 20.4 21 12 3.4 3.6 3.3 10l12.5 2-12.5 2z"/></svg></button></div></form>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbzCU_SH2jtMjztjQaFjQOgbNLiGeyPDxTKZVd67jZSlMQD5iW2EViORP81uEJiZ6nkY/exec';
+const $ = id => document.getElementById(id);
+let token = null;
+let chatHist = [];   // only general-helper turns (translate/summarize); child answers are never kept or sent back
+try { token = sessionStorage.getItem('cvc_t'); } catch (e) {}
+
+/* ---------------- human avatar (one drawing, used for logo, header and message bubbles) ---------------- */
+const ROBOT = p => `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="${p}bg" cx="50%" cy="35%" r="80%"><stop offset="0" stop-color="#ffb877"/><stop offset="1" stop-color="#e8641b"/></radialGradient><linearGradient id="${p}hd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#e6ebf2"/><stop offset="1" stop-color="#a9b4c6"/></linearGradient><linearGradient id="${p}bd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5f7fb"/><stop offset="1" stop-color="#9aa6ba"/></linearGradient><linearGradient id="${p}vs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b3858"/><stop offset="1" stop-color="#080d1c"/></linearGradient><radialGradient id="${p}ey" cx="50%" cy="40%" r="65%"><stop offset="0" stop-color="#eaffff"/><stop offset=".5" stop-color="#5ff0ff"/><stop offset="1" stop-color="#139fd0"/></radialGradient><linearGradient id="${p}pd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb877"/><stop offset="1" stop-color="#d9540f"/></linearGradient><radialGradient id="${p}bl" cx="38%" cy="35%" r="70%"><stop offset="0" stop-color="#fff6d6"/><stop offset=".45" stop-color="#ffb347"/><stop offset="1" stop-color="#e8641b"/></radialGradient></defs><rect width="200" height="200" fill="url(#${p}bg)"/><circle cx="100" cy="92" r="70" fill="#fff" opacity=".1"/><ellipse class="shadow" cx="100" cy="190" rx="38" ry="6" fill="#5a2406" opacity=".35"/><g class="robot"><rect x="39" y="140" width="16" height="34" rx="8" fill="url(#${p}bd)"/><circle cx="47" cy="173" r="8" fill="url(#${p}pd)"/><g class="arm"><rect x="145" y="140" width="16" height="34" rx="8" fill="url(#${p}bd)"/><circle cx="153" cy="173" r="8" fill="url(#${p}pd)"/></g><rect x="58" y="130" width="84" height="56" rx="26" fill="url(#${p}bd)"/><rect x="80" y="146" width="40" height="24" rx="11" fill="#0f1730"/><circle class="heart" cx="100" cy="158" r="6" fill="url(#${p}bl)"/><circle cx="88" cy="158" r="2" fill="#5ff0ff" opacity=".8"/><circle cx="112" cy="158" r="2" fill="#5ff0ff" opacity=".8"/><path d="M66 140c6-5 14-7 22-7" stroke="#fff" stroke-width="3" opacity=".6" fill="none" stroke-linecap="round"/><rect x="88" y="122" width="24" height="12" rx="5" fill="#8794a8"/><g class="head"><line x1="100" y1="36" x2="100" y2="22" stroke="#8794a8" stroke-width="4" stroke-linecap="round"/><circle class="ball" cx="100" cy="17" r="7.5" fill="url(#${p}bl)"/><circle cx="97.5" cy="14.5" r="2.2" fill="#fff" opacity=".8"/><rect class="ear" x="28" y="66" width="14" height="32" rx="7" fill="url(#${p}pd)"/><rect class="ear" x="158" y="66" width="14" height="32" rx="7" fill="url(#${p}pd)"/><rect x="38" y="34" width="124" height="94" rx="36" fill="url(#${p}hd)" stroke="#c3ccd9" stroke-width="1.5"/><path d="M54 52c10-11 30-15 52-14" stroke="#fff" stroke-width="5" opacity=".75" fill="none" stroke-linecap="round"/><path d="M56 118c14 8 74 8 88 0" stroke="#8f9bb0" stroke-width="3" opacity=".35" fill="none" stroke-linecap="round"/><rect x="50" y="53" width="100" height="58" rx="26" fill="url(#${p}vs)" stroke="#3d4c73" stroke-width="1.5"/><path d="M60 68q5-9 20-11l32-1q-20 6-44 18z" fill="#fff" opacity=".13"/><g class="eyes"><circle cx="78" cy="82" r="14" fill="#5ff0ff" opacity=".16"/><circle cx="122" cy="82" r="14" fill="#5ff0ff" opacity=".16"/><rect class="eye" x="70" y="71" width="16" height="22" rx="8" fill="url(#${p}ey)"/><rect class="eye" x="114" y="71" width="16" height="22" rx="8" fill="url(#${p}ey)"/><circle cx="75" cy="76" r="2.3" fill="#fff"/><circle cx="119" cy="76" r="2.3" fill="#fff"/></g><path class="mouth" d="M89 100q11 8 22 0" stroke="#5ff0ff" stroke-width="3.4" fill="none" stroke-linecap="round"/><circle class="led" cx="60" cy="102" r="3" fill="#ff9a3c"/><circle class="led" cx="140" cy="102" r="3" fill="#ff9a3c"/></g></g></svg>`;
+let avN = 0;
+document.querySelectorAll('[data-av]').forEach(e => { e.innerHTML = ROBOT('r' + (avN++) + '_'); });
+document.documentElement.style.setProperty('--avimg', 'url("data:image/svg+xml;utf8,' + encodeURIComponent(ROBOT('b_')) + '")');
+let talkId = 0;
+const botEls = () => document.querySelectorAll('.av,.logo');
+function mode(c, on) { botEls().forEach(e => e.classList.toggle(c, on)); }
+function talking(on) { mode('talk', on); }
+function setBusy(on) { mode('think', on); $('st').classList.toggle('tp', on); $('st').textContent = on ? 'កំពុងវាយ' : 'កំពុងសកម្ម'; }
+function wave() { mode('wave', false); void document.body.offsetWidth; mode('wave', true); setTimeout(() => mode('wave', false), 1600); }
+botEls().forEach(e => { e.style.cursor = 'pointer'; e.addEventListener('click', wave); });
+setTimeout(wave, 700); setInterval(() => { if (!document.hidden) wave(); }, 9000);
+document.addEventListener('pointermove', e => {   // the robot's eyes follow your finger / mouse
+  document.querySelectorAll('.eyes').forEach(g => {
+    const r = g.ownerSVGElement.getBoundingClientRect(); if (!r.width) return;
+    const k = v => Math.max(-1, Math.min(1, v / 260));
+    g.style.transform = 'translate(' + (k(e.clientX - r.left - r.width / 2) * 5).toFixed(1) + 'px,' + (k(e.clientY - r.top - r.height / 2) * 3.5).toFixed(1) + 'px)';
+  });
+});
+
+async function call(body) {
+  const r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(Object.assign({ token }, body)) });
+  const t = await r.text();
+  try { return JSON.parse(t); } catch (e) { throw new Error('Not JSON: ' + t.slice(0, 80)); }
+}
+function show(chat) {
+  $('login').style.display = chat ? 'none' : '';
+  $('chat').style.display = chat ? 'flex' : 'none';
+}
+// Turns [label](https://...) into safe clickable links; everything else stays plain text.
+function link(parent, text) {
+  const re = /\[([^\]]+)\]\((https:\/\/[^)\s]+|sso:rcmon)\)/g; let i = 0, m;
+  while ((m = re.exec(text))) {
+    parent.appendChild(document.createTextNode(text.slice(i, m.index)));
+    const a = document.createElement('a'); a.textContent = m[1];
+    if (m[2] === 'sso:rcmon') { a.href = '#'; a.onclick = openMonitor; }
+    else { a.href = m[2]; a.target = '_blank'; a.rel = 'noopener'; }
+    parent.appendChild(a); i = re.lastIndex;
+  }
+  parent.appendChild(document.createTextNode(text.slice(i)));
+}
+function fill(el, text) { el.classList.remove('typing'); el.textContent = ''; link(el, text); }
+// Child details: shows a TITLE for each part and "Label  value" rows (also draws | tables with header cells).
+function fmt(el, text) {
+  const lines = String(text).split('\n'), out = document.createDocumentFragment();
+  const kvre = /^[\s•\-–*]*([^:：៖|]{1,45}?)\s*[:：៖]\s+(\S.*)$/, ttre = /^[\s#*]*(.{1,60}?)\s*[:：៖]\s*\**$/;
+  let n = 0, rows = null;
+  const flush = () => {
+    if (!rows) return;
+    const t = document.createElement('table'), hasHead = rows.head;
+    const mk = (cells, tag) => { const tr = document.createElement('tr'); cells.forEach(c => { const x = document.createElement(tag); link(x, c); tr.appendChild(x); }); t.appendChild(tr); };
+    if (hasHead) mk(rows.head, 'th'); rows.body.forEach(r => mk(r, 'td'));
+    out.appendChild(t); rows = null; n++;
+  };
+  lines.forEach(raw => {
+    const ln = raw.trim();
+    if (!ln) { flush(); return; }
+    if (/^[\s|:\-]+$/.test(ln) && ln.includes('-')) { if (rows && !rows.head && rows.body.length === 1) { rows.head = rows.body.shift(); } return; }
+    if ((ln.match(/\|/g) || []).length >= 2) {
+      const cells = ln.replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+      if (!rows) rows = { head: null, body: [] }; rows.body.push(cells); return;
+    }
+    flush();
+    let m;
+    if ((m = ln.match(kvre))) {
+      const r = document.createElement('div'); r.className = 'kr';
+      const k = document.createElement('div'); k.className = 'kk'; k.textContent = m[1].replace(/\*+/g, '');
+      const v = document.createElement('div'); v.className = 'kvv'; link(v, m[2].replace(/\*+/g, ''));
+      r.append(k, v); out.appendChild(r); n++;
+    } else if ((m = ln.match(ttre)) || (/^\p{Extended_Pictographic}/u.test(ln) && ln.length <= 60)) {
+      const t = document.createElement('div'); t.className = 'kt'; link(t, (m ? m[1] : ln).replace(/\*+/g, '')); out.appendChild(t); n++;
+    } else { const p = document.createElement('div'); p.className = 'kp'; link(p, ln); out.appendChild(p); }
+  });
+  flush();
+  if (!n) { fill(el, text); return; }
+  el.classList.remove('typing'); el.textContent = ''; el.classList.add('kvm'); el.appendChild(out);
+}
+// Opens RC Monitoring already signed in: asks the server for a one-time link (valid 2 minutes).
+async function openMonitor(e) {
+  e.preventDefault();
+  const w = window.open('', '_blank'); // opened first so phone browsers don't block it
+  try {
+    const d = await call({ action: 'sso' });
+    if (d.ok && d.url) { if (w) w.location.href = d.url; else location.href = d.url; return; }
+    throw new Error(d.message || 'failed');
+  } catch (err) { if (w) w.close(); alert('Cannot open RC Monitoring. Please try again.'); }
+}
+function add(cls, text) {
+  const d = document.createElement('div');
+  d.className = 'm ' + cls; fill(d, text);
+  if (cls === 'bot' && text.length > 3) addSpk(d, text);
+  $('log').appendChild(d); $('log').scrollTop = 1e9; return d;
+}
+function signedIn(name) {
+  show(true); $('who').textContent = name || '';
+  if (!$('log').children.length) add('bot', 'សួស្តី! ខ្ញុំជាជំនួយការ CVC។ ខ្ញុំអាចជួយអ្នកបាន៖\n\n👤 រកព័ត៌មានកុមារ — វាយឈ្មោះ ឬលេខ RC\n👥 មើលកុមារក្នុងតំបន់របស់អ្នក — វាយឈ្មោះ CVC ឬ «កុមាររបស់ខ្ញុំ»\n📍 បើកទីតាំង និង 📋 ប្រព័ន្ធតាមដាន RC\n🎤 និយាយជំនួសការវាយ — ចុចប៊ូតុងមីក្រូហ្វូន\n🔊 ស្តាប់ចម្លើយ — ចុចប៊ូតុង 🔊 ក្រោមសារ\n🌍 ស្វែងយល់អំពីអង្គការទស្សនៈពិភពលោក — ចុចប៊ូតុងខាងក្រោម\n✍️ ជួយសរសេរ ឬកែសម្រួលសារ និងលិខិតជូនអ្នកឧបត្ថម្ភ\n💡 ពន្យល់ពាក្យ ឬឆ្លើយសំណួរទូទៅអំពីការងារ\n\nចុចប៊ូតុងខាងក្រោម ឬវាយសំណួររបស់អ្នក។\nសូមកុំបញ្ចូលព័ត៌មានផ្ទាល់ខ្លួនរបស់កុមារ ក្នុងសំណួរទូទៅ។');
+}
+function signOut(msg) {
+  stopRec(true); stopSpeak(); setBusy(false);
+  if (token) call({ action: 'logout' }).catch(() => {});
+  token = null; try { sessionStorage.removeItem('cvc_t'); } catch (e) {}
+  $('log').innerHTML = ''; chatHist = []; $('p').value = ''; $('err').textContent = msg || ''; show(false);
+}
+
+$('go').onclick = async () => {
+  $('err').textContent = ''; $('go').disabled = true;
+  try {
+    const d = await call({ action: 'login', username: $('u').value, password: $('p').value, token: null });
+    if (d.ok) { token = d.token; try { sessionStorage.setItem('cvc_t', token); } catch (e) {} $('p').value = ''; signedIn(d.name); }
+    else $('err').textContent = d.message || 'Sign in failed.';
+  } catch (e) { $('err').textContent = 'Cannot connect: ' + e.message; }
+  $('go').disabled = false;
+};
+$('p').addEventListener('keydown', e => { if (e.key === 'Enter') $('go').click(); });
+$('out').onclick = () => signOut();
+
+$('f').onsubmit = async e => {
+  e.preventDefault();
+  const q = $('q').value.trim(); if (!q) return;
+  stopSpeak(); unlockTts();
+  const oldOpt = $('optrow'); if (oldOpt) oldOpt.remove();
+  add('me', q); $('q').value = ''; $('q').style.height = 'auto'; $('send').disabled = true;
+  const w = add('bot', '…'); w.classList.add('typing'); setBusy(true);
+  try {
+    const d = await call({ action: 'ask', question: q, history: chatHist.slice(-6) });
+    if (d.error === 'SESSION') { signOut(d.message); return; }
+    const ans = d.answer || d.message || 'No answer.';
+    if (d.options || d.choices) { fmt(w, ans); showOpts(d); }                      // child answers: pills, never read aloud
+    else { fill(w, ans); addSpk(w, ans); if (autoSpeak || viaMic) speak(ans); }
+    viaMic = false;
+    if (d.mode === 'chat') { chatHist.push({ r: 'user', t: q }, { r: 'model', t: ans }); if (chatHist.length > 12) chatHist.splice(0, chatHist.length - 12); }
+  } catch (err) { w.classList.remove('typing'); w.textContent = 'Connection error. Try again.'; }
+  setBusy(false); $('send').disabled = false; $('q').focus();
+};
+
+const grow = () => { const q = $('q'); q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 140) + 'px'; };
+$('q').addEventListener('input', grow);
+$('q').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('f').requestSubmit(); } });
+$('chips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.wv) { add('me', 'អំពីអង្គការទស្សនៈពិភពលោក'); wvMenu('សូមជ្រើសរើសសំណួរដែលអ្នកចង់ដឹង៖'); return; }
+  $('q').value = b.dataset.t; grow(); $('q').focus();
+  if (b.dataset.send) $('f').requestSubmit();
+});
+
+/* ---------------- child pills: pick what to see instead of showing everything ---------------- */
+function optRow(items, onPick, actions, key) {
+  const old = $('optrow'); if (old) old.remove();
+  const d = document.createElement('div'); d.id = 'optrow'; d.className = 'optrow';
+  items.forEach(it => { const b = document.createElement('button'); b.type = 'button'; b.textContent = it.label; b.onclick = () => onPick(it); d.appendChild(b); });
+  (actions || []).forEach(a => {   // Location + RCM Form (Report / Close)
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'act'; b.textContent = a.label;
+    b.onclick = a.url ? () => window.open(a.url, '_blank', 'noopener') : () => openRcm(key, a.rcm);
+    d.appendChild(b);
+  });
+  $('log').appendChild(d); $('log').scrollTop = 1e9;
+}
+function showOpts(d) {
+  if (d.options && d.options.length) optRow(d.options, it => childAsk(d.key, it.id), d.actions, d.key);
+  else if (d.choices && d.choices.length) optRow(d.choices, it => childAsk(it.key, 'menu'));
+}
+// Opens the dashboard's RCM form for this child, already signed in (one-time link, valid 2 minutes).
+async function openRcm(key, type) {
+  const w = window.open('', '_blank');   // opened first so phone browsers don't block it
+  try {
+    const d = await call({ action: 'sso', target: 'rcm', key, type });
+    if (d.ok && d.url) { if (w) w.location.href = d.url; else location.href = d.url; return; }
+    throw new Error(d.message || 'failed');
+  } catch (err) { if (w) w.close(); alert('មិនអាចបើកទម្រង់ RCM បានទេ សូមព្យាយាមម្តងទៀត។\nCannot open the RCM form. Please try again.'); }
+}
+async function childAsk(key, section) {
+  stopSpeak();
+  const old = $('optrow'); if (old) old.remove();
+  const w = document.createElement('div'); w.className = 'm bot'; w.textContent = '…';   // no read-aloud button: child details are never spoken
+  $('log').appendChild(w); $('log').scrollTop = 1e9; setBusy(true);
+  try {
+    const d = await call({ action: 'child', key, section });
+    if (d.error === 'SESSION') { signOut(d.message); return; }
+    fmt(w, d.answer || d.message || 'រកមិនឃើញទេ។');
+    showOpts(d);
+  } catch (err) { w.textContent = 'មានបញ្ហា សូមព្យាយាមម្តងទៀត។'; }
+  setBusy(false);
+}
+
+/* ---------------- About World Vision: fixed questions and answers (no server call, no Gemini quota) ---------------- */
+const WV_LINK = '\n\nព័ត៌មានបន្ថែម / More: [wvi.org](https://www.wvi.org/about-us)';
+const WV = [
+  { q: '🌟 ចក្ខុវិស័យរបស់ទស្សនៈពិភពលោកជាអ្វី?', a: [
+    '🌟 ចក្ខុវិស័យ (Vision)',
+    '',
+    'សម្រាប់កុមារគ្រប់រូប មានជីវិតដ៏បរិបូរណ៍។',
+    '(Our vision for every child, life in all its fullness.)',
+    '',
+    'ការអធិស្ឋានរបស់យើង៖ សម្រាប់ដួងចិត្តគ្រប់រូប មានឆន្ទៈធ្វើឱ្យវាកើតឡើង។',
+    '',
+    'ចំណុចសំខាន់៖',
+    '• ផ្តោតលើកុមារដែលងាយរងគ្រោះបំផុត ដើម្បីឱ្យពួកគេរួចផុតពីភាពក្រីក្រ និងមានជីវិតដ៏បរិបូរណ៍',
+    '• សេចក្តីប្រាថ្នាសម្រាប់កុមារ៖ មានសុខភាពល្អ ទទួលបានការអប់រំសម្រាប់ជីវិត ទទួលបានការថែរក្សា និងការការពារ ហើយដឹងពីសេចក្តីស្រឡាញ់របស់ព្រះ និងអ្នកជិតខាង',
+    '• ទស្សនៈពិភពលោកបម្រើមនុស្សគ្រប់រូប ដោយមិនប្រកាន់សាសនា ជាតិសាសន៍ ពូជសាសន៍ ឬភេទ'
+  ].join('\n') + WV_LINK },
+  { q: '🎯 បេសកកម្មរបស់ទស្សនៈពិភពលោកជាអ្វី?', a: [
+    '🎯 បេសកកម្ម (Mission)',
+    '',
+    'ទស្សនៈពិភពលោកជាភាពជាដៃគូអន្តរជាតិនៃគ្រីស្ទបរិស័ទ ដែលមានបេសកកម្មដើរតាមព្រះអម្ចាស់ និងព្រះសង្គ្រោះរបស់យើង គឺព្រះយេស៊ូវគ្រីស្ទ ក្នុងការធ្វើការជាមួយអ្នកក្រីក្រ និងអ្នកត្រូវគេជិះជាន់ ដើម្បីជំរុញការផ្លាស់ប្តូរមនុស្ស ស្វែងរកយុត្តិធម៌ និងធ្វើជាសាក្សីអំពីដំណឹងល្អនៃព្រះរាជ្យរបស់ព្រះ។',
+    '',
+    'យើងអនុវត្តបេសកកម្មនេះតាមរយៈការប្តេជ្ញាចិត្តរួមបញ្ចូលគ្នា ៖',
+    '• ការអភិវឌ្ឍដែលផ្លាស់ប្តូរជីវិត ផ្អែកលើសហគមន៍ និងស្ថិតស្ថេរ ដោយផ្តោតជាពិសេសលើតម្រូវការរបស់កុមារ',
+    '• ការជួយសង្គ្រោះបន្ទាន់ក្នុងគ្រាមហន្តរាយ',
+    '• ការជំរុញយុត្តិធម៌',
+    '• ការគាំទ្រព្រះវិហារក្នុងបេសកកម្មរបស់ខ្លួន',
+    '• ការលើកកម្ពស់ការយល់ដឹងរបស់សាធារណជន',
+    '• ការធ្វើជាសាក្សីអំពីព្រះយេស៊ូវគ្រីស្ទ'
+  ].join('\n') + WV_LINK },
+  { q: '💛 គុណតម្លៃស្នូលទាំង ៦ មានអ្វីខ្លះ?', a: [
+    '💛 គុណតម្លៃស្នូលទាំង ៦ (Core Values)',
+    '',
+    '1. យើងជាគ្រីស្ទបរិស័ទ — ជំនឿលើព្រះគ្រីស្ទជាចំណុចស្នូលនៃអត្តសញ្ញាណ និងការជំរុញចិត្តបម្រើរបស់យើង',
+    '2. យើងប្តេជ្ញាចិត្តចំពោះអ្នកក្រីក្រ — ធ្វើការជាមួយអ្នកក្រីក្រ និងអ្នកត្រូវគេជិះជាន់ ក្នុងការស្វែងរកយុត្តិធម៌ សន្តិភាព ការផ្សះផ្សា និងការព្យាបាលរបួស',
+    '3. យើងឱ្យតម្លៃមនុស្ស — គោរពសេចក្តីថ្លៃថ្នូរ និងតម្លៃរបស់មនុស្សគ្រប់រូប ដោយដាក់មនុស្សមុនលុយ រចនាសម្ព័ន្ធ និងប្រព័ន្ធ',
+    '4. យើងជាអ្នកគ្រប់គ្រងទ្រព្យ (Stewards) — ធនធានមិនមែនជារបស់យើងទេ ដូច្នេះយើងរក្សាស្តង់ដារវិជ្ជាជីវៈ និងគណនេយ្យភាពខ្ពស់',
+    '5. យើងជាដៃគូ — ធ្វើការជាមួយអ្នកក្រ ម្ចាស់ជំនួយ និងដៃគូផ្សេងៗ ដោយការគោរពគ្នាទៅវិញទៅមក',
+    '6. យើងឆ្លើយតប — ឆ្លើយតបនឹងគ្រាអាសន្នដែលគំរាមជីវិត ជាកន្លែងដែលការចូលរួមរបស់យើងអាចធ្វើឱ្យមានភាពខុសគ្នា',
+    '',
+    'គុណតម្លៃមិនអាចចេញជាច្បាប់បានទេ ត្រូវតែរស់នៅតាមវា។'
+  ].join('\n') + WV_LINK },
+  { q: '📜 ប្រវត្តិរបស់ទស្សនៈពិភពលោក', a: [
+    '📜 ប្រវត្តិរបស់ទស្សនៈពិភពលោក',
+    '',
+    '• ឆ្នាំ ១៩៤៧ — លោក Bob Pierce ជួបគ្រូម្នាក់នៅប្រទេសចិន ដែលថែរក្សាកុមារីម្នាក់ត្រូវគេបោះបង់ចោល។ លោកសន្យាផ្ញើប្រាក់រៀងរាល់ខែដើម្បីជួយ។ នេះជាចំណុចប្រែប្រួលសម្រាប់លោក',
+    '• ឆ្នាំ ១៩៥០ — ទស្សនៈពិភពលោកត្រូវបានបង្កើតឡើងដោយលោក Bob Pierce',
+    '• ឆ្នាំ ១៩៥៣ — កម្មវិធីឧបត្ថម្ភកុមារដំបូង ចាប់ផ្តើមដើម្បីជួយកុមារកំព្រារាប់សែននាក់ នៅចុងសង្គ្រាមកូរ៉េ',
+    '',
+    'នៅកម្ពុជា៖',
+    '• ឆ្នាំ ១៩៧០ — ចាប់ផ្តើមការងារនៅកម្ពុជា',
+    '• ឆ្នាំ ១៩៧៥ — កម្មវិធីត្រូវបិទ ដោយសារស្ថានភាពសង្គ្រាម',
+    '• ទសវត្សរ៍ ១៩៨០ — ត្រឡប់មកបន្តប្រតិបត្តិការនៅកម្ពុជាវិញ',
+    '• ចាប់ពីពាក់កណ្តាលទសវត្សរ៍ ១៩៩០ — កម្មវិធីអភិវឌ្ឍតាមតំបន់ (ADP) ដែលគាំទ្រដោយការឧបត្ថម្ភកុមារ ជួយសហគមន៍ឱ្យទទួលបានការអប់រំ និងសុខាភិបាលកាន់តែប្រសើរ ពង្រឹងជីវភាព សម្អាតមីន និងបង្កើតបរិស្ថានសុវត្ថិភាពសម្រាប់កុមារ',
+    '• ឆ្នាំ ២០២៦ — ខួបទី ៥៦ ឆ្នាំនៅកម្ពុជា ដោយបានវិនិយោគជាង ៦៥០ លានដុល្លារអាមេរិកសម្រាប់សុខុមាលភាពកុមារ'
+  ].join('\n') + '\n\nព័ត៌មានបន្ថែម / More: [wvi.org](https://www.wvi.org/about-us)' },
+  { q: '🏘️ តើគម្រោងត្រូវបានអនុវត្តយ៉ាងដូចម្តេច?', a: [
+    '🏘️ ការអនុវត្តគម្រោង',
+    '',
+    'ទស្សនៈពិភពលោកធ្វើការតាមវិធីសាស្ត្រផ្អែកលើសហគមន៍ តាមរយៈ «កម្មវិធីអភិវឌ្ឍតាមតំបន់» (Area Development Programme - ADP)៖',
+    '',
+    '1. វាយតម្លៃតម្រូវការ — បុគ្គលិកក្នុងតំបន់ធ្វើការជាមួយតំណាងសហគមន៍ អាជ្ញាធរមូលដ្ឋាន និងអង្គការដៃគូ',
+    '2. រៀបចំផែនការរួមគ្នា — ផែនការរយៈពេលវែង (ជាទូទៅប្រហែល ១៥ ឆ្នាំ) ផ្តោតលើសុខភាព ការអប់រំ ទឹកស្អាត ជីវភាព និងការការពារកុមារ',
+    '3. អនុវត្តជាមួយសហគមន៍ — សហគមន៍ជាអ្នកកំណត់អាទិភាព និងចូលរួមដោយផ្ទាល់',
+    '4. តាមដាន និងវាស់វែង — គម្រោងត្រូវបានវាស់វែងប្រៀបធៀបនឹងគោលដៅជាប្រចាំ',
+    '5. ភាពស្ថិតស្ថេរ — ធ្វើឱ្យសហគមន៍អាចបន្តដោយខ្លួនឯងបាន នៅពេលទស្សនៈពិភពលោកបញ្ចប់ការងារក្នុងតំបន់',
+    '',
+    'ប្រាក់ឧបត្ថម្ភពីអ្នកឧបត្ថម្ភជាច្រើនត្រូវបានប្រមូលរួម ដើម្បីផ្តល់ផលប្រយោជន៍ដល់កុមារ និងគ្រួសារទាំងមូលក្នុងសហគមន៍។',
+    '',
+    'ចំណាំ៖ នេះជាទិដ្ឋភាពទូទៅ។ សម្រាប់ព័ត៌មានលម្អិតអំពីគម្រោងក្នុងតំបន់របស់អ្នក សូមសួរអ្នកគ្រប់គ្រងកម្មវិធី។'
+  ].join('\n') + '\n\nព័ត៌មានបន្ថែម / More: [wvi.org](https://www.wvi.org/child-sponsorship)' },
+  { q: '🧒 តើការឧបត្ថម្ភកុមារដំណើរការយ៉ាងដូចម្តេច?', a: [
+    '🧒 ការឧបត្ថម្ភកុមារ (Child Sponsorship)',
+    '',
+    '• អ្នកឧបត្ថម្ភម្នាក់ភ្ជាប់ជាមួយកុមារម្នាក់ ហើយផ្តល់ជំនួយរៀងរាល់ខែ។ អ្នកឧបត្ថម្ភ និងកុមារអាចទំនាក់ទំនងគ្នាតាមរយៈលិខិត',
+    '• ប្រាក់ឧបត្ថម្ភត្រូវបានប្រមូលរួមជាមួយអ្នកឧបត្ថម្ភផ្សេងទៀតក្នុងសហគមន៍តែមួយ ហើយប្រើសម្រាប់កម្មវិធីអភិវឌ្ឍសហគមន៍ — មិនផ្តល់ជាសាច់ប្រាក់ផ្ទាល់ដល់កុមារ ឬគ្រួសារទេ',
+    '• ការជ្រើសរើសកុមារ — សហគមន៍ជ្រើសរើសកុមារដែលងាយរងគ្រោះបំផុត ហើយបុគ្គលិកផ្ទៀងផ្ទាត់បញ្ជីឈ្មោះ',
+    '• ការចូលរួមជាការស្ម័គ្រចិត្ត — គ្រួសារ និងកុមារសម្រេចចិត្តដោយខ្លួនឯងថាចូលរួមឬអត់ ជាទូទៅមួយគ្រួសារមួយកុមារ',
+    '• កុមារដែលបានចុះឈ្មោះ (RC) ជាតំណាងនៃកុមារទាំងអស់ក្នុងសហគមន៍',
+    '• ផលប្រយោជន៍ដល់សហគមន៍ទាំងមូល — ទស្សនៈពិភពលោកបញ្ជាក់ថា កុមារម្នាក់ដែលទទួលបានការឧបត្ថម្ភ ធ្វើឱ្យកុមារផ្សេងទៀតប្រហែលបួននាក់ទទួលបានផលប្រយោជន៍ផងដែរ'
+  ].join('\n') + '\n\nព័ត៌មានបន្ថែម / More: [wvi.org](https://www.wvi.org/child-sponsorship)' }
+];
+function wvMenu(title) {
+  const old = $('wvmenu'); if (old) old.remove();
+  const d = document.createElement('div'); d.id = 'wvmenu'; d.className = 'm bot menu';
+  const h = document.createElement('div'); h.className = 'mh'; h.textContent = title; d.appendChild(h);
+  WV.forEach(it => { const b = document.createElement('button'); b.type = 'button'; b.textContent = it.q; b.onclick = () => wvShow(it); d.appendChild(b); });
+  $('log').appendChild(d); $('log').scrollTop = 1e9;
+}
+function wvShow(it) {
+  add('me', it.q);
+  const a = add('bot', it.a);
+  wvMenu('ចង់ដឹងអ្វីទៀត?');
+  a.scrollIntoView({ block: 'start' });
+}
+
+/* ---------------- voice input: record -> 16 kHz WAV -> server transcribes -> text goes in the box ---------------- */
+let mr = null, chunks = [], stream = null, tick = null, t0 = 0, cancelled = false;
+const MAXSEC = 60;
+function recMsg(txt, keepButtons) {
+  $('rec').style.display = 'flex'; $('recmsg').textContent = txt;
+  $('recok').style.display = $('recx').style.display = keepButtons ? '' : 'none';
+}
+function recHide() { $('rec').style.display = 'none'; }
+function toWavBuffer(pcm, sr) {
+  const n = pcm.length, b = new ArrayBuffer(44 + n * 2), v = new DataView(b);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) { const s = Math.max(-1, Math.min(1, pcm[i])); v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true); }
+  return b;
+}
+async function blobToWav16k(blob) {
+  const AC = window.AudioContext || window.webkitAudioContext, ctx = new AC();
+  const raw = await blob.arrayBuffer();
+  const audio = await new Promise((res, rej) => ctx.decodeAudioData(raw, res, rej));
+  try { ctx.close(); } catch (e) {}
+  const sr = 16000, off = new OfflineAudioContext(1, Math.max(1, Math.ceil(audio.duration * sr)), sr);
+  const src = off.createBufferSource(); src.buffer = audio; src.connect(off.destination); src.start();
+  const out = await off.startRendering();
+  return toWavBuffer(out.getChannelData(0), sr);
+}
+function b64(buf) {
+  const u = new Uint8Array(buf); let s = '';
+  for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+async function startRec() {
+  if (!navigator.mediaDevices || !window.MediaRecorder) { recMsg('ឧបករណ៍នេះមិនគាំទ្រការថតសំឡេងទេ។ / Recording is not supported on this device.', false); setTimeout(recHide, 4000); return; }
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+  catch (e) { recMsg('សូមអនុញ្ញាតឱ្យប្រើមីក្រូហ្វូន ក្នុងការកំណត់កម្មវិធីរុករក។ / Please allow the microphone.', false); setTimeout(recHide, 5000); return; }
+  const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+  const mt = types.find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+  mr = mt ? new MediaRecorder(stream, { mimeType: mt }) : new MediaRecorder(stream);
+  chunks = []; cancelled = false;
+  mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  mr.onstop = onRecStop;
+  mr.start(); t0 = Date.now();
+  $('mic').classList.add('on'); $('mic').textContent = '⏹'; $('send').disabled = true; mode('listen', true);
+  const upd = () => {
+    const s = Math.floor((Date.now() - t0) / 1000);
+    recMsg('🔴 កំពុងថត… ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + ' — និយាយបានហើយ ចុច «បញ្ចប់»', true);
+    if (s >= MAXSEC) stopRec(false);
+  };
+  upd(); tick = setInterval(upd, 500);
+}
+function stopRec(cancel) {
+  cancelled = !!cancel; clearInterval(tick); tick = null;
+  if (mr && mr.state !== 'inactive') { try { mr.stop(); } catch (e) {} }
+  else if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  if (cancel) { recHide(); $('mic').classList.remove('on'); $('mic').textContent = '🎤'; $('send').disabled = false; }
+}
+async function onRecStop() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  $('mic').classList.remove('on'); $('mic').textContent = '🎤'; mode('listen', false);
+  if (cancelled || !chunks.length) { recHide(); $('send').disabled = false; return; }
+  recMsg('⏳ កំពុងបម្លែងសំឡេងទៅជាអក្សរ… / Converting your voice to text…', false);
+  try {
+    const wav = await blobToWav16k(new Blob(chunks, { type: (mr && mr.mimeType) || 'audio/webm' }));
+    const d = await call({ action: 'transcribe', audio: b64(wav) });
+    if (d.error === 'SESSION') { signOut(d.message); return; }
+    const txt = (d.text || '').trim();
+    if (txt) {
+      const q = $('q'); q.value = (q.value ? q.value.trim() + ' ' : '') + txt; viaMic = true; grow(); q.focus(); recHide();
+    } else { recMsg('មិនឮច្បាស់ទេ សូមនិយាយម្តងទៀត។ / Could not hear clearly. Please try again.', false); setTimeout(recHide, 4000); }
+  } catch (e) { recMsg('មានបញ្ហា សូមព្យាយាមម្តងទៀត។ / Something went wrong. Please try again.', false); setTimeout(recHide, 4000); }
+  $('send').disabled = false;
+}
+$('mic').onclick = () => { if (mr && mr.state === 'recording') stopRec(false); else startRec(); };
+$('recok').onclick = () => stopRec(false);
+$('recx').onclick = () => stopRec(true);
+
+/* ---------------- read aloud: uses the phone's built-in voice; the text is NOT sent to any server ---------------- */
+const TTS = 'speechSynthesis' in window;
+let autoSpeak = false, viaMic = false, voices = [], ttsWarned = false, curBtn = null;
+try { autoSpeak = localStorage.getItem('cvc_auto') === '1'; } catch (e) {}
+function loadVoices() { voices = TTS ? speechSynthesis.getVoices() : []; }
+if (TTS) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+const isKm = s => (s.match(/[\u1780-\u17FF]/g) || []).length > s.replace(/\s/g, '').length * 0.3;
+function speakable(t) {
+  return t.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/https?:\/\/\S+/g, '')
+    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE0F}\u2022\u2192]/gu, ' ')
+    .replace(/\s[\u2014\u2013]\s/g, ', ').replace(/[|*_#>]+/g, ' ');
+}
+function splitSpeech(t) {
+  const out = [];
+  const cut = s => { while (s.length > 200) { let i = s.lastIndexOf(' ', 200); if (i < 60) i = 200; out.push(s.slice(0, i).trim()); s = s.slice(i); } if (s.trim()) out.push(s.trim()); };
+  t.split(/\n+/).forEach(line => { (line.match(/[^\u17D4.!?]+[\u17D4.!?]*/g) || []).forEach(s => { if (s.trim()) cut(s.trim()); }); });
+  return out.filter(s => /[\p{L}\p{N}]/u.test(s));
+}
+function pickVoice(km) {
+  const w = km ? 'km' : 'en', norm = v => v.lang.toLowerCase().replace('_', '-');
+  return voices.find(v => norm(v).startsWith(w + '-')) || voices.find(v => norm(v).startsWith(w)) || null;
+}
+function unlockTts() { try { if (TTS) speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch (e) {} }  // lets iPhone speak later
+function stopSpeak() { talkId++; talking(false); try { if (TTS) speechSynthesis.cancel(); } catch (e) {} if (curBtn) { curBtn.classList.remove('on'); curBtn = null; } }
+function speak(text, btn) {
+  if (!TTS) { recMsg('ឧបករណ៍នេះមិនគាំទ្រការអានសំឡេងទេ។ / Reading aloud is not supported on this device.', false); setTimeout(recHide, 4000); return; }
+  stopSpeak(); loadVoices();
+  const parts = splitSpeech(speakable(text)); let skipped = false, last = null;
+  parts.forEach(p => {
+    const km = isKm(p), v = pickVoice(km);
+    if (km && !v) { skipped = true; return; }
+    const u = new SpeechSynthesisUtterance(p); u.lang = km ? 'km-KH' : 'en-US'; u.rate = 0.95; if (v) u.voice = v;
+    speechSynthesis.speak(u); last = u;
+  });
+  if (last) {
+    const id = ++talkId; talking(true); if (btn) { curBtn = btn; btn.classList.add('on'); }
+    last.onend = last.onerror = () => { if (id === talkId) talking(false); if (btn && curBtn === btn) { btn.classList.remove('on'); curBtn = null; } };
+  }
+  if (skipped && !ttsWarned) {
+    ttsWarned = true;
+    recMsg('ទូរស័ព្ទនេះមិនមានសំឡេងខ្មែរទេ។ សូមដំឡើង «Speech Services by Google» ហើយទាញយកសំឡេងខ្មែរ។ / No Khmer voice on this phone. Install Google Speech Services and download the Khmer voice.', false);
+    setTimeout(recHide, 9000);
+  }
+}
+function addSpk(el, text) {
+  if (!TTS) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'spk'; b.textContent = '🔊 ស្តាប់ / Listen';
+  b.onclick = () => { if (curBtn === b) stopSpeak(); else speak(text, b); };
+  el.appendChild(b);
+}
+$('vol').textContent = autoSpeak ? '🔊' : '🔇';
+$('vol').onclick = () => {
+  autoSpeak = !autoSpeak; $('vol').textContent = autoSpeak ? '🔊' : '🔇';
+  try { localStorage.setItem('cvc_auto', autoSpeak ? '1' : '0'); } catch (e) {}
+  if (autoSpeak) unlockTts(); else stopSpeak();
+};
+
+if (token) signedIn('');
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
