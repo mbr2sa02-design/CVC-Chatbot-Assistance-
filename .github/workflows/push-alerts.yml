@@ -20,8 +20,8 @@ jobs:
 
       - run: npm install web-push --no-save
 
-      # Removes accidental spaces / new lines from the secrets and prints only their LENGTHS (never the values).
-      # PUSH_SECRET length here must equal the length shown by checkSecret() in Apps Script (128).
+      # Removes accidental spaces / new lines from the secrets and prints only their LENGTHS and a short fingerprint (never the values).
+      # PUSH_SECRET length and fingerprint here must equal what checkSecret() prints in Apps Script.
       - name: Check and clean secrets
         env:
           APPS_SCRIPT_URL: ${{ secrets.APPS_SCRIPT_URL }}
@@ -35,6 +35,8 @@ jobs:
             echo "$n length: ${#v}"
             echo "$n=$v" >> "$GITHUB_ENV"
           done
+          # Fingerprint (first 8 characters of a hash): must equal the one printed by checkSecret() in Apps Script.
+          echo "PUSH_SECRET fingerprint: $(printf '%s' "$PUSH_SECRET" | tr -d '[:space:]' | sha256sum | cut -c1-8)"
 
       # The cleaned values from the step above are used automatically here.
       - run: node send-push.js
