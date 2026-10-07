@@ -1,4 +1,4 @@
-# Save as .github/workflows/push-alerts.yml in a repository that also contains send-push.js
+# Save as .github/workflows/push-alerts.yml in the repository that also contains send-push.js
 # Runs every day at 07:00 Phnom Penh time (= 00:00 UTC) and can also be started by hand (Actions tab > Run workflow).
 name: RC date alerts
 
@@ -13,15 +13,28 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
+
       - run: npm install web-push --no-save
-      - run: node send-push.js
+
+      # Removes accidental spaces / new lines from the secrets and prints only their LENGTHS (never the values).
+      # PUSH_SECRET length here must equal the length shown by checkSecret() in Apps Script (128).
+      - name: Check and clean secrets
         env:
           APPS_SCRIPT_URL: ${{ secrets.APPS_SCRIPT_URL }}
           PUSH_SECRET: ${{ secrets.PUSH_SECRET }}
           VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
           VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
           VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+        run: |
+          for n in APPS_SCRIPT_URL PUSH_SECRET VAPID_PUBLIC VAPID_PRIVATE VAPID_SUBJECT; do
+            v="$(printf '%s' "${!n}" | tr -d '[:space:]')"
+            echo "$n length: ${#v}"
+            echo "$n=$v" >> "$GITHUB_ENV"
+          done
 
+      # The cleaned values from the step above are used automatically here.
+      - run: node send-push.js
