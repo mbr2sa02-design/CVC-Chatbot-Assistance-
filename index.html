@@ -310,7 +310,7 @@ $('p').addEventListener('keydown', e => { if (e.key === 'Enter') $('go').click()
 $('out').onclick = () => signOut();
 
 /* ---------------- RC date alerts (Web Push) ---------------- */
-const VAPID_PUBLIC = 'PASTE_YOUR_PUBLIC_KEY';
+const VAPID_PUBLIC = 'BPGexqdvC5gJAr-DFRkwFeIj8bdAoCYnugAjItTAQ1nPE8L4carUNJjriLiozqjoUZbgNIrzGvm8KSZYdXv9OOA';
 const PUSH_OK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 const urlB64 = s => { const p = '='.repeat((4 - s.length % 4) % 4), r = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(r, c => c.charCodeAt(0)); };
 
