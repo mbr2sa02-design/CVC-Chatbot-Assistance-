@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CVC Assistant</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#e8641b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CVC Assistant">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f3ef;--bg2:#fff4ea;--card:#fff;--ink:#1f1b18;--mute:#7a7169;--line:#ece5dd;--brand:#e8641b;--brand2:#f58a3c;--bot:#fff;--glass:rgba(255,255,255,.82);--ok:#22a06b;--shadow:0 1px 2px rgba(31,27,24,.06),0 8px 24px rgba(31,27,24,.07)}
+@media (prefers-color-scheme:dark){:root{--bg:#131110;--bg2:#1d1815;--card:#1f1b19;--ink:#f3eee8;--mute:#a39a91;--line:#342f2b;--bot:#2a2522;--glass:rgba(31,27,25,.82);--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{height:100%;margin:0}
+body{background:radial-gradient(1100px 520px at 50% -12%,var(--bg2),var(--bg));color:var(--ink);font-family:"Noto Sans Khmer","Inter",system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;justify-content:center;padding-top:env(safe-area-inset-top)}
+.wrap{width:100%;max-width:720px;height:100%;display:flex;flex-direction:column}
+button{font:inherit;font-weight:600;border:0;background:var(--brand);color:#fff;cursor:pointer}button:disabled{opacity:.5;cursor:default}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+/* login */
+.card{background:var(--card);border:1px solid var(--line);border-radius:26px;padding:30px 22px 24px;margin:auto 14px;box-shadow:var(--shadow);text-align:center}
+.logo,.av{background:linear-gradient(135deg,var(--brand2),var(--brand));display:grid;place-items:center;color:#fff}
+.logo{width:104px;height:104px;border-radius:32px;margin:0 auto 14px;font-size:32px;box-shadow:0 12px 26px rgba(232,100,27,.35)}
+h1{font-size:1.25rem;margin:0 0 6px}p.s{color:var(--mute);margin:0 0 20px;font-size:.88rem;line-height:1.6}
+.fld{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:0 14px;margin-bottom:10px;text-align:left}
+.fld:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px rgba(232,100,27,.15)}
+.fld input{border:0;outline:0;background:transparent;color:var(--ink);font:inherit;padding:14px 0;width:100%}
+#err{color:#d23b2a;font-size:.88rem;min-height:1.3em;margin:2px 0 10px}
+#go{width:100%;border-radius:14px;padding:14px;font-weight:700;background:linear-gradient(135deg,var(--brand2),var(--brand));box-shadow:0 10px 22px rgba(232,100,27,.3)}
+/* chat shell */
+#chat{background:transparent}
+.top{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);position:relative;z-index:2}
+.av{width:48px;height:48px;border-radius:50%;font-size:20px;flex:none;box-shadow:0 6px 14px rgba(232,100,27,.3)}
+.ttl{flex:1;min-width:0}.ttl b{display:block;font-size:1.02rem;line-height:1.3}
+.ttl small{display:flex;align-items:center;gap:6px;color:var(--mute);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(34,160,107,.2);flex:none}
+#who:empty::before{content:"World Vision Cambodia"}
+.ib{width:40px;height:40px;border-radius:50%;padding:0;background:transparent;color:var(--mute);border:1px solid var(--line);font-size:1.05rem;display:grid;place-items:center;flex:none}
+.ib:hover{border-color:var(--brand);color:var(--brand)}.ib svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#log{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:18px 14px 8px;scroll-behavior:smooth;scrollbar-width:thin}
+.m{max-width:84%;padding:11px 15px;border-radius:20px;line-height:1.65;font-size:.97rem;white-space:pre-wrap;overflow-wrap:anywhere;animation:pop .24s ease-out both}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.me{align-self:flex-end;background:linear-gradient(135deg,var(--brand2),var(--brand));color:#fff;border-bottom-right-radius:6px;box-shadow:0 6px 16px rgba(232,100,27,.25)}
+.bot{align-self:flex-start;position:relative;margin-left:38px;background:var(--bot);border:1px solid var(--line);border-bottom-left-radius:6px;box-shadow:var(--shadow)}
+.bot::before{content:"";position:absolute;left:-38px;bottom:0;width:30px;height:30px;border-radius:50%;background:var(--avimg) center/cover no-repeat,linear-gradient(135deg,var(--brand2),var(--brand));box-shadow:0 2px 6px rgba(232,100,27,.3)}
+.bot a{color:var(--brand);font-weight:700;word-break:break-all;text-decoration:none;border-bottom:1.5px solid rgba(232,100,27,.35)}
+.m.typing{font-size:0;min-width:70px;padding:10px 16px;display:flex;align-items:center;justify-content:center}
+.m.typing::after{content:"•••";font-size:22px;letter-spacing:4px;line-height:1;color:var(--mute);animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+.spk,.cpy{display:inline-flex;align-items:center;gap:4px;margin-top:8px;padding:5px 12px;font-size:.82rem;font-weight:500;background:transparent;color:var(--mute);border:1px solid var(--line);border-radius:999px}
+.spk.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.spk+.cpy{margin-left:6px}.spk.fb{margin-left:6px}.spk.fb.sel{background:var(--brand);color:#fff;border-color:var(--brand)}.cpy{-webkit-user-select:none;user-select:none}
+/* everything in the chat can be selected and copied */
+.m,.m *,#cpan,#cpan *{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+.m button,.m .cpy{-webkit-user-select:none;user-select:none}
+.menu{display:flex;flex-direction:column;gap:8px;white-space:normal}.menu .mh{font-weight:700;margin-bottom:2px}
+.menu button{background:var(--bg);color:var(--ink);border:1px solid var(--line);font-weight:500;text-align:left;padding:11px 14px;line-height:1.45;border-radius:14px}
+.menu button:hover{border-color:var(--brand)}
+.optrow{display:flex;flex-wrap:wrap;gap:8px;padding:2px 2px 2px 38px;animation:pop .24s ease-out both}
+.optrow button{background:var(--card);color:var(--brand);border:1px solid rgba(232,100,27,.4);border-radius:999px;padding:8px 14px;font-weight:600;font-size:.87rem;line-height:1.35;text-align:left;box-shadow:var(--shadow)}
+.optrow button:hover{background:rgba(232,100,27,.08)}
+.optrow button.act{background:rgba(232,100,27,.1);color:var(--ink);border:1px solid var(--line);border-radius:14px;font-weight:600}
+/* human avatar: alive (blinks, breathes, pulses online ring, mouth moves while speaking) */
+.logo svg,.av svg{width:100%;height:100%;display:block;border-radius:inherit}
+.av{position:relative}
+/* 3D robot: floats, tilts, blinks, glows, waves, eyes follow the pointer, mouth + ears move when talking/listening */
+.robot{animation:bob 3s ease-in-out infinite}@keyframes bob{50%{transform:translateY(-5px)}}
+.head{transform-origin:100px 126px;animation:tilt 5s ease-in-out infinite}@keyframes tilt{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+.shadow{transform-box:fill-box;transform-origin:center;animation:shd 3s ease-in-out infinite}@keyframes shd{50%{transform:scale(.8);opacity:.15}}
+.eye{transform-box:fill-box;transform-origin:center;animation:lid 3.8s infinite}@keyframes lid{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.eyes{transition:transform .12s ease-out}
+.mouth{transform-box:fill-box;transform-origin:50% 0}
+.talk .mouth{animation:talk .28s ease-in-out infinite alternate}@keyframes talk{to{transform:scaleY(2.1)}}
+.ball,.led{animation:glow 2s ease-in-out infinite}@keyframes glow{50%{opacity:.45}}
+.heart{transform-box:fill-box;transform-origin:center;animation:beat 1.2s ease-in-out infinite}@keyframes beat{50%{transform:scale(1.3)}}
+.ear{transform-box:fill-box;transform-origin:center}
+.talk .ear,.listen .ear{animation:earp .45s ease-in-out infinite alternate}@keyframes earp{to{transform:scaleY(1.18)}}
+.think .ball{animation:glow .45s infinite}.think .eyes{animation:scan 1.1s ease-in-out infinite}@keyframes scan{0%,100%{transform:translateX(-5px)}50%{transform:translateX(5px)}}
+.arm{transform-origin:152px 142px}.wave .arm{animation:wave 1.5s ease-in-out}
+@keyframes wave{0%,100%{transform:rotate(0)}12%{transform:rotate(-140deg)}28%{transform:rotate(-110deg)}44%{transform:rotate(-140deg)}60%{transform:rotate(-110deg)}76%{transform:rotate(-140deg)}}
+.av::before{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--ok);opacity:0;animation:ring 2.6s ease-out infinite;pointer-events:none}
+.av::after{content:"";position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;background:var(--ok);border:2px solid var(--card)}
+@keyframes ring{0%{transform:scale(.88);opacity:.55}100%{transform:scale(1.2);opacity:0}}
+#st::after{content:" · "}#st.tp::after{content:"… · "}
+/* titled data (child details): Title / Label : value */
+.m.kvm{white-space:normal}
+.kvm .kt{font-weight:700;color:var(--brand);margin:12px 0 4px;font-size:.95rem}.kvm .kt:first-child{margin-top:0;font-size:1.06rem;color:var(--ink)}.kvm .kt:nth-child(2){padding-top:8px;border-top:1px solid var(--line)}
+.kvm .kr{display:grid;grid-template-columns:minmax(90px,38%) 1fr;gap:2px 12px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.kvm .kr:last-child{border-bottom:0}
+.kvm .kk{color:var(--mute);font-size:.84rem;font-weight:600}.kvm .kvv{overflow-wrap:anywhere}
+.kvm .kp{margin:4px 0}
+.kvm table{border-collapse:collapse;width:100%;font-size:.88rem;display:block;overflow-x:auto;margin:6px 0}
+.kvm th{background:rgba(232,100,27,.1);text-align:left;padding:6px 8px;white-space:nowrap}
+.kvm td{padding:6px 8px;border-top:1px solid var(--line);vertical-align:top}
+/* calendar */
+#cal{position:fixed;inset:0;z-index:20;background:var(--bg);display:none;flex-direction:column;padding-top:env(safe-area-inset-top)}#cal.on{display:flex}
+.ch{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--card);border-bottom:1px solid var(--line)}
+.ch b{flex:1;min-width:0;font-size:1.02rem;line-height:1.35}.ch small{display:block;font-weight:400;color:var(--mute);font-size:.72rem}
+.ch button{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:10px;min-width:38px;height:38px;padding:0 9px;font-size:.88rem}
+.cb{flex:1;overflow-y:auto}.cg{display:grid;grid-template-columns:repeat(7,1fr)}
+.cw{background:#0a9b1f;color:#fff;text-align:center;padding:7px 0;font-weight:600;font-size:.82rem}
+.cd{min-height:66px;border:.5px solid var(--line);padding:3px 2px;text-align:center;background:var(--card);cursor:pointer;overflow:hidden;font-size:.68rem;color:var(--mute)}
+.cd.o{opacity:.4}.cd.su{background:#0aa21d;color:#eaffee}.cd.sel{outline:2px solid var(--brand);outline-offset:-2px}
+.cd .n{display:inline-block;min-width:24px;font-size:1rem;font-weight:700;color:var(--ink);border-radius:12px}.cd.ev .n{color:#1a4fd6}.cd.ph .n{color:#d23b2a}.cd.su .n{color:#fff}.cd.td .n{background:var(--brand);color:#fff}
+.pl{display:none;margin-top:2px;padding:1px 4px;border-radius:4px;font-size:.68rem;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl.h{background:#ffd9dc;color:#c0281b}.pl.o{background:#dbe4ff;color:#1a3fd0}.pl.p{background:#fff0c2;color:#7a5200}
+.dots{display:flex;gap:3px;justify-content:center;margin-top:3px}.dots i{width:6px;height:6px;border-radius:50%;background:#1a4fd6}.dots i.h{background:#d23b2a}.dots i.p{background:#e0a100}
+@media(min-width:720px){.cd{min-height:100px}.cd .pl{display:block}.dots{display:none}}
+.cp{padding:12px 14px calc(18px + env(safe-area-inset-bottom))}.pt{font-weight:700;margin-bottom:8px;line-height:1.6}
+.pr{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line)}.pr span{flex:1}.pr.dn span{text-decoration:line-through;opacity:.55}
+.pr button{background:transparent;color:var(--mute);padding:4px 8px}.pr .pl{display:block;font-size:.88rem;padding:4px 8px;white-space:normal}
+.af{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.af input,.af select{border:1px solid var(--line);border-radius:10px;padding:9px;background:var(--card);color:var(--ink);font:inherit;min-width:0}#pt{flex:1 1 100%}.af button{border-radius:10px;padding:9px 14px;margin-left:auto}
+/* quick chips + input */
+.chips{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;padding:8px 14px 4px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-weight:500;font-size:.86rem;white-space:nowrap;box-shadow:var(--shadow)}
+.chips button:hover{border-color:var(--brand)}
+#rec{display:none;align-items:center;gap:8px;padding:9px 12px;margin:6px 14px 0;border:1px solid var(--line);border-radius:16px;background:var(--bot);box-shadow:var(--shadow)}
+#rec span{flex:1;font-size:.9rem}#rec button{padding:8px 14px;font-size:.88rem;border-radius:999px}
+#rec button.x{background:none;color:var(--mute);border:1px solid var(--line);font-weight:500}
+form.in{padding:8px 14px calc(12px + env(safe-area-inset-bottom));margin:0}
+.box{display:flex;align-items:flex-end;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:28px;padding:6px 6px 6px 18px;box-shadow:var(--shadow);transition:border-color .15s,box-shadow .15s}
+.box:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px rgba(232,100,27,.15)}
+#q{flex:1;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:inherit;resize:none;max-height:140px;line-height:1.5;padding:9px 0}
+#mic{width:42px;height:42px;border-radius:50%;padding:0;background:transparent;color:var(--brand);line-height:1;flex:none;display:grid;place-items:center}
+#mic svg{width:24px;height:24px;display:block}
+#mic:hover{background:rgba(232,100,27,.1)}
+#mic.on{background:#d23b2a;color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 9px rgba(210,59,42,.22)}}
+#send{width:42px;height:42px;border-radius:50%;padding:0;flex:none;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand2),var(--brand));box-shadow:0 6px 14px rgba(232,100,27,.32)}
+#send svg{width:19px;height:19px;fill:#fff}
+.hide{display:none}
+@media (min-width:760px){body{padding:20px}.wrap{max-width:760px}#chat{background:var(--glass);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow);overflow:hidden}.top{border-radius:28px 28px 0 0}}
+@media (prefers-reduced-motion:reduce){*{animation:none !important;scroll-behavior:auto !important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="login" class="card">
+    <div class="logo" data-av></div>
+    <h1>ជំនួយការ CVC</h1>
+    <p class="s">ចូលដោយប្រើឈ្មោះអ្នកប្រើ និងកូដ PIN របស់អ្នក<br>Sign in with your dashboard username and PIN</p>
+    <label class="fld"><span>👤</span><input id="u" placeholder="ឈ្មោះអ្នកប្រើ / Username" autocomplete="username" autocapitalize="none"></label>
+    <label class="fld"><span>🔒</span><input id="p" type="password" placeholder="កូដ PIN / PIN" autocomplete="current-password"></label>
+    <p id="err"></p>
+    <button id="go">ចូល / Sign in</button>
+  </div>
+
+  <div id="chat" class="hide" style="display:none;flex:1;flex-direction:column;min-height:0">
+    <div class="top">
+      <div class="av" data-av></div>
+      <div class="ttl"><b>ជំនួយការ CVC</b><small><i class="dot"></i><span id="st">កំពុងសកម្ម</span><span id="who"></span></small></div>
+      <button id="calb" class="ib" type="button" aria-label="ប្រតិទិន / Calendar" title="ប្រតិទិន / Calendar">📅</button>
+      <button id="alertb" class="ib" type="button" aria-label="ការជូនដំណឹង / Alerts" title="ការជូនដំណឹង / Alerts">🔕</button><button id="vol" class="ib" type="button" aria-label="អានចម្លើយដោយស្វ័យប្រវត្តិ / Auto-read replies" title="Auto-read replies">🔇</button>
+      <button id="out" class="ib" type="button" aria-label="ចេញ / Sign out" title="ចេញ / Sign out"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></button>
+    </div>
+    <div id="log" aria-live="polite"></div>
+    <div class="chips" id="chips">
+      <button type="button" data-cal="1">📅 ប្រតិទិន</button>
+      <button type="button" data-wv="1">🌍 អំពីអង្គការទស្សនៈពិភពលោក</button>
+      <button type="button" data-cp="1">🛡️ ការការពារកុមារ · Do &amp; Don’t</button>
+      <button type="button" data-t="កុមាររបស់ខ្ញុំ" data-send="1">👥 កុមាររបស់ខ្ញុំ</button>
+    </div>
+    <div id="rec"><span id="recmsg"></span><button type="button" id="recok">✔ បញ្ចប់</button><button type="button" id="recx" class="x">✖ បោះបង់</button></div>
+    <form class="in" id="f"><div class="box"><textarea id="q" rows="1" autocomplete="off" placeholder="សួរ ឬបិទភ្ជាប់អត្ថបទ… / Ask or paste text…"></textarea><button type="button" id="mic" aria-label="ថតសំឡេង / Record voice" title="ថតសំឡេង / Record voice"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 15.5a4 4 0 0 0 4-4V6a4 4 0 0 0-8 0v5.5a4 4 0 0 0 4 4z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.2"/></svg></button><button id="send" aria-label="ផ្ញើ / Send"><svg viewBox="0 0 24 24"><path d="M3.4 20.4 21 12 3.4 3.6 3.3 10l12.5 2-12.5 2z"/></svg></button></div></form>
+  </div>
+</div>
+
+<div id="cal"><div class="ch"><button id="cx" type="button">✕</button><button id="cpv" type="button">‹</button><button id="cnx" type="button">›</button><b id="ct"></b><button id="ctd" type="button">ថ្ងៃនេះ</button><button id="cbell" type="button">🔕</button></div><div class="cb"><div class="cg" id="cgh"></div><div class="cg" id="cgd"></div><div class="cp" id="cpan"></div></div></div>
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxnpisHZJoN3jkzENqHP7PHnSYwx2gYD46PGWPkh6-7I9IpBnwHIhURNOGLPxCgzJUmtA/exec';
+const $ = id => document.getElementById(id);
+let token = null;
+let chatHist = [];   // only general-helper turns (translate/summarize); child answers are never kept or sent back
+try { token = sessionStorage.getItem('cvc_t'); } catch (e) {}
+
+/* ---------------- human avatar (one drawing, used for logo, header and message bubbles) ---------------- */
+const ROBOT = p => `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="${p}bg" cx="50%" cy="35%" r="80%"><stop offset="0" stop-color="#ffb877"/><stop offset="1" stop-color="#e8641b"/></radialGradient><linearGradient id="${p}hd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#e6ebf2"/><stop offset="1" stop-color="#a9b4c6"/></linearGradient><linearGradient id="${p}bd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5f7fb"/><stop offset="1" stop-color="#9aa6ba"/></linearGradient><linearGradient id="${p}vs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b3858"/><stop offset="1" stop-color="#080d1c"/></linearGradient><radialGradient id="${p}ey" cx="50%" cy="40%" r="65%"><stop offset="0" stop-color="#eaffff"/><stop offset=".5" stop-color="#5ff0ff"/><stop offset="1" stop-color="#139fd0"/></radialGradient><linearGradient id="${p}pd" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb877"/><stop offset="1" stop-color="#d9540f"/></linearGradient><radialGradient id="${p}bl" cx="38%" cy="35%" r="70%"><stop offset="0" stop-color="#fff6d6"/><stop offset=".45" stop-color="#ffb347"/><stop offset="1" stop-color="#e8641b"/></radialGradient></defs><rect width="200" height="200" fill="url(#${p}bg)"/><circle cx="100" cy="92" r="70" fill="#fff" opacity=".1"/><ellipse class="shadow" cx="100" cy="190" rx="38" ry="6" fill="#5a2406" opacity=".35"/><g class="robot"><rect x="39" y="140" width="16" height="34" rx="8" fill="url(#${p}bd)"/><circle cx="47" cy="173" r="8" fill="url(#${p}pd)"/><g class="arm"><rect x="145" y="140" width="16" height="34" rx="8" fill="url(#${p}bd)"/><circle cx="153" cy="173" r="8" fill="url(#${p}pd)"/></g><rect x="58" y="130" width="84" height="56" rx="26" fill="url(#${p}bd)"/><rect x="80" y="146" width="40" height="24" rx="11" fill="#0f1730"/><circle class="heart" cx="100" cy="158" r="6" fill="url(#${p}bl)"/><circle cx="88" cy="158" r="2" fill="#5ff0ff" opacity=".8"/><circle cx="112" cy="158" r="2" fill="#5ff0ff" opacity=".8"/><path d="M66 140c6-5 14-7 22-7" stroke="#fff" stroke-width="3" opacity=".6" fill="none" stroke-linecap="round"/><rect x="88" y="122" width="24" height="12" rx="5" fill="#8794a8"/><g class="head"><line x1="100" y1="36" x2="100" y2="22" stroke="#8794a8" stroke-width="4" stroke-linecap="round"/><circle class="ball" cx="100" cy="17" r="7.5" fill="url(#${p}bl)"/><circle cx="97.5" cy="14.5" r="2.2" fill="#fff" opacity=".8"/><rect class="ear" x="28" y="66" width="14" height="32" rx="7" fill="url(#${p}pd)"/><rect class="ear" x="158" y="66" width="14" height="32" rx="7" fill="url(#${p}pd)"/><rect x="38" y="34" width="124" height="94" rx="36" fill="url(#${p}hd)" stroke="#c3ccd9" stroke-width="1.5"/><path d="M54 52c10-11 30-15 52-14" stroke="#fff" stroke-width="5" opacity=".75" fill="none" stroke-linecap="round"/><path d="M56 118c14 8 74 8 88 0" stroke="#8f9bb0" stroke-width="3" opacity=".35" fill="none" stroke-linecap="round"/><rect x="50" y="53" width="100" height="58" rx="26" fill="url(#${p}vs)" stroke="#3d4c73" stroke-width="1.5"/><path d="M60 68q5-9 20-11l32-1q-20 6-44 18z" fill="#fff" opacity=".13"/><g class="eyes"><circle cx="78" cy="82" r="14" fill="#5ff0ff" opacity=".16"/><circle cx="122" cy="82" r="14" fill="#5ff0ff" opacity=".16"/><rect class="eye" x="70" y="71" width="16" height="22" rx="8" fill="url(#${p}ey)"/><rect class="eye" x="114" y="71" width="16" height="22" rx="8" fill="url(#${p}ey)"/><circle cx="75" cy="76" r="2.3" fill="#fff"/><circle cx="119" cy="76" r="2.3" fill="#fff"/></g><path class="mouth" d="M89 100q11 8 22 0" stroke="#5ff0ff" stroke-width="3.4" fill="none" stroke-linecap="round"/><circle class="led" cx="60" cy="102" r="3" fill="#ff9a3c"/><circle class="led" cx="140" cy="102" r="3" fill="#ff9a3c"/></g></g></svg>`;
+let avN = 0;
+document.querySelectorAll('[data-av]').forEach(e => { e.innerHTML = ROBOT('r' + (avN++) + '_'); });
+document.documentElement.style.setProperty('--avimg', 'url("data:image/svg+xml;utf8,' + encodeURIComponent(ROBOT('b_')) + '")');
+let talkId = 0;
+const botEls = () => document.querySelectorAll('.av,.logo');
+function mode(c, on) { botEls().forEach(e => e.classList.toggle(c, on)); }
+function talking(on) { mode('talk', on); }
+function setBusy(on) { mode('think', on); $('st').classList.toggle('tp', on); $('st').textContent = on ? 'កំពុងវាយ' : 'កំពុងសកម្ម'; }
+function wave() { mode('wave', false); void document.body.offsetWidth; mode('wave', true); setTimeout(() => mode('wave', false), 1600); }
+botEls().forEach(e => { e.style.cursor = 'pointer'; e.addEventListener('click', wave); });
+setTimeout(wave, 700); setInterval(() => { if (!document.hidden) wave(); }, 9000);
+document.addEventListener('pointermove', e => {   // the robot's eyes follow your finger / mouse
+  document.querySelectorAll('.eyes').forEach(g => {
+    const r = g.ownerSVGElement.getBoundingClientRect(); if (!r.width) return;
+    const k = v => Math.max(-1, Math.min(1, v / 260));
+    g.style.transform = 'translate(' + (k(e.clientX - r.left - r.width / 2) * 5).toFixed(1) + 'px,' + (k(e.clientY - r.top - r.height / 2) * 3.5).toFixed(1) + 'px)';
+  });
+});
+
+try { fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'warm' }) }).catch(() => {}); } catch (e) {}
+async function call(body, ms) {
+  const ac = new AbortController(), tm = setTimeout(() => ac.abort(), ms || 30000);   // Apps Script cold starts can be slow
+  try {
+    const r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(Object.assign({ token }, body)), signal: ac.signal });
+    const t = await r.text();
+    try { return JSON.parse(t); } catch (e) { console.error('Bad server response:', t.slice(0, 200)); throw new Error('BAD_RESPONSE'); }
+  } finally { clearTimeout(tm); }
+}
+const NETMSG = e => (e && e.name === 'AbortError')
+  ? 'ចម្លើយយឺតពេក សូមព្យាយាមម្តងទៀត។\nTook too long. Please try again.'
+  : 'មិនអាចភ្ជាប់បាន សូមពិនិត្យអ៊ីនធឺណិត ហើយព្យាយាមម្តងទៀត។\nCannot connect. Please check your internet and try again.';
+function show(chat) {
+  $('login').style.display = chat ? 'none' : '';
+  $('chat').style.display = chat ? 'flex' : 'none';
+}
+// Turns [label](https://...) into safe clickable links; everything else stays plain text.
+function link(parent, text) {
+  const re = /\[([^\]]+)\]\((https:\/\/[^)\s]+|sso:rcmon)\)/g; let i = 0, m;
+  while ((m = re.exec(text))) {
+    parent.appendChild(document.createTextNode(text.slice(i, m.index)));
+    const a = document.createElement('a'); a.textContent = m[1];
+    if (m[2] === 'sso:rcmon') { a.href = '#'; a.onclick = openMonitor; }
+    else { a.href = m[2]; a.target = '_blank'; a.rel = 'noopener'; }
+    parent.appendChild(a); i = re.lastIndex;
+  }
+  parent.appendChild(document.createTextNode(text.slice(i)));
+}
+function fill(el, text) { el.classList.remove('typing'); el.textContent = ''; link(el, text); }
+// Child details: shows a TITLE for each part and "Label  value" rows (also draws | tables with header cells).
+function fmt(el, text) {
+  const lines = String(text).split('\n'), out = document.createDocumentFragment();
+  const kvre = /^[\s•\-–*]*([^:：៖|]{1,45}?)\s*[:：៖]\s+(\S.*)$/, ttre = /^[\s#*]*(.{1,60}?)\s*[:：៖]\s*\**$/;
+  let n = 0, rows = null;
+  const flush = () => {
+    if (!rows) return;
+    const t = document.createElement('table'), hasHead = rows.head;
+    const mk = (cells, tag) => { const tr = document.createElement('tr'); cells.forEach(c => { const x = document.createElement(tag); link(x, c); tr.appendChild(x); }); t.appendChild(tr); };
+    if (hasHead) mk(rows.head, 'th'); rows.body.forEach(r => mk(r, 'td'));
+    out.appendChild(t); rows = null; n++;
+  };
+  lines.forEach(raw => {
+    const ln = raw.trim();
+    if (!ln) { flush(); return; }
+    if (/^[\s|:\-]+$/.test(ln) && ln.includes('-')) { if (rows && !rows.head && rows.body.length === 1) { rows.head = rows.body.shift(); } return; }
+    if ((ln.match(/\|/g) || []).length >= 2) {
+      const cells = ln.replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+      if (!rows) rows = { head: null, body: [] }; rows.body.push(cells); return;
+    }
+    flush();
+    let m;
+    if ((m = ln.match(kvre))) {
+      const r = document.createElement('div'); r.className = 'kr';
+      const k = document.createElement('div'); k.className = 'kk'; k.textContent = m[1].replace(/\*+/g, '');
+      const v = document.createElement('div'); v.className = 'kvv'; link(v, m[2].replace(/\*+/g, ''));
+      r.append(k, v); out.appendChild(r); n++;
+    } else if ((m = ln.match(ttre)) || (/^\p{Extended_Pictographic}/u.test(ln) && ln.length <= 60)) {
+      const t = document.createElement('div'); t.className = 'kt'; link(t, (m ? m[1] : ln).replace(/\*+/g, '')); out.appendChild(t); n++;
+    } else { const p = document.createElement('div'); p.className = 'kp'; link(p, ln); out.appendChild(p); }
+  });
+  flush();
+  if (!n) { fill(el, text); addCopy(el); return; }
+  el.classList.remove('typing'); el.textContent = ''; el.classList.add('kvm'); el.appendChild(out); addCopy(el);
+}
+// Opens RC Monitoring already signed in: asks the server for a one-time link (valid 2 minutes).
+async function openMonitor(e) {
+  e.preventDefault();
+  const w = window.open('', '_blank'); // opened first so phone browsers don't block it
+  try {
+    const d = await call({ action: 'sso' });
+    if (d.ok && d.url) { if (w) w.location.href = d.url; else location.href = d.url; return; }
+    throw new Error(d.message || 'failed');
+  } catch (err) { if (w) w.close(); alert('Cannot open RC Monitoring. Please try again.'); }
+}
+function add(cls, text) {
+  const d = document.createElement('div');
+  d.className = 'm ' + cls; fill(d, text);
+  if (cls === 'bot' && text.length > 3) { addSpk(d, text); addCopy(d); }
+  $('log').appendChild(d); $('log').scrollTop = 1e9; return d;
+}
+function signedIn(name) {
+  show(true); $('who').textContent = name || ''; lastAct = Date.now(); setTimeout(() => loadPlans(), 0); setTimeout(() => chk(), 1500); setTimeout(alertState, 800);
+  if (!$('log').children.length) add('bot', 'សួស្តី! ខ្ញុំជាជំនួយការ CVC។ ខ្ញុំអាចជួយអ្នកបាន៖\n\n👤 រកព័ត៌មានកុមារ — វាយឈ្មោះ ឬលេខ RC\n👥 មើលកុមារក្នុងតំបន់របស់អ្នក — វាយឈ្មោះ CVC ឬ «កុមាររបស់ខ្ញុំ»\n📍 បើកទីតាំង និង 📋 ប្រព័ន្ធតាមដាន RC\n🎙️ ថតសំឡេងជំនួសការវាយ — ចុចប៊ូតុងថតសំឡេង\n🔊 ស្តាប់ចម្លើយ — ចុចប៊ូតុង 🔊 ក្រោមសារ\n📋 ចម្លងចម្លើយ — ចុចប៊ូតុង 📋 ក្រោមសារ\n🌍 ស្វែងយល់អំពីអង្គការទស្សនៈពិភពលោក — ចុចប៊ូតុងខាងក្រោម\n🛡️ ស្វែងយល់អំពីការការពារកុមារ និង Do & Don’t — ចុចប៊ូតុងខាងក្រោម\n💡 ពន្យល់ពាក្យ ឬឆ្លើយសំណួរទូទៅអំពីការងារ\n\nចុចប៊ូតុងខាងក្រោម ឬវាយសំណួររបស់អ្នក។\nសូមកុំបញ្ចូលព័ត៌មានផ្ទាល់ខ្លួនរបស់កុមារ ក្នុងសំណួរទូទៅ។');
+}
+function signOut(msg) {
+  stopRec(true); stopSpeak(); setBusy(false);
+  if (token) call({ action: 'logout' }).catch(() => {});
+  token = null; try { sessionStorage.removeItem('cvc_t'); sessionStorage.removeItem('cvc_u'); } catch (e) {}
+  Object.keys(KID).forEach(k => delete KID[k]);   // child details cached for the pills must not outlive the session
+  try { PLS = []; PK = null; } catch (e) {}   // plans stay on the device under this user's key, but are cleared from the screen
+  $('log').innerHTML = ''; chatHist = []; $('p').value = ''; $('err').textContent = msg || ''; show(false);
+}
+
+/* auto sign-out after 10 min without touching the app (protects child data on shared phones) */
+const IDLE_MS = 10 * 60 * 1000, IDLE_MSG = 'បានចាកចេញដោយសារមិនប្រើប្រាស់។ សូមចូលម្តងទៀត។\nSigned out due to inactivity.';
+let lastAct = Date.now();
+['pointerdown', 'keydown', 'touchstart', 'scroll'].forEach(ev => document.addEventListener(ev, () => { lastAct = Date.now(); }, { passive: true, capture: true }));
+const idleCheck = () => { if (token && Date.now() - lastAct > IDLE_MS) signOut(IDLE_MSG); };
+setInterval(idleCheck, 15000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) idleCheck(); });
+
+$('go').onclick = async () => {
+  $('err').textContent = ''; $('go').disabled = true;
+  try {
+    const d = await call({ action: 'login', username: $('u').value, password: $('p').value, token: null });
+    if (d.ok) { token = d.token; try { sessionStorage.setItem('cvc_t', token); sessionStorage.setItem('cvc_u', $('u').value.trim().toLowerCase()); } catch (e) {} $('p').value = ''; signedIn(d.name); }
+    else $('err').textContent = d.message || 'Sign in failed.';
+  } catch (e) { console.error(e); $('err').textContent = NETMSG(e); }
+  $('go').disabled = false;
+};
+$('p').addEventListener('keydown', e => { if (e.key === 'Enter') $('go').click(); });
+$('out').onclick = () => signOut();
+
+/* ---------------- RC date alerts (Web Push) ---------------- */
+const VAPID_PUBLIC = 'BPGexqdvC5gJAr-DFRkwFeIj8bdAoCYnugAjItTAQ1nPE8L4carUNJjriLiozqjoUZbgNIrzGvm8KSZYdXv9OOA';
+const PUSH_OK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const urlB64 = s => { const p = '='.repeat((4 - s.length % 4) % 4), r = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(r, c => c.charCodeAt(0)); };
+
+async function alertState() {   // shows 🔔 when this phone is subscribed; re-sends the subscription so the sheet always has the current user
+  let on = false;
+  try {
+    if (PUSH_OK && Notification.permission === 'granted') {
+      const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+      if (sub) { on = true; call({ action: 'subscribe', sub: sub.toJSON() }).catch(() => {}); syncPlans(); }
+    }
+  } catch (e) {}
+  $('alertb').textContent = on ? '🔔' : '🔕'; $('alertb').dataset.on = on ? '1' : '';
+  return on;
+}
+async function alertsOn() {
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent), standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  if (ios && !standalone) { add('bot', 'សម្រាប់ iPhone សូមបន្ថែមកម្មវិធីនេះទៅអេក្រង់ដើម (Share → Add to Home Screen) រួចបើកពីទីនោះ ទើបទទួលបានការជូនដំណឹង។\nOn iPhone, first add this app to the Home Screen (Share → Add to Home Screen), then open it from there.'); return; }
+  if (!PUSH_OK) { add('bot', 'ឧបករណ៍ ឬកម្មវិធីរុករកនេះមិនគាំទ្រការជូនដំណឹងទេ។\nThis device or browser does not support alerts.'); return; }
+  if (await Notification.requestPermission() !== 'granted') { add('bot', 'អ្នកមិនបានអនុញ្ញាតការជូនដំណឹងទេ។ សូមបើកវានៅក្នុងការកំណត់កម្មវិធីរុករក។\nAlerts were not allowed. Please enable them in the browser settings.'); return; }
+  if (!VAPID_PUBLIC || /PASTE/i.test(VAPID_PUBLIC)) { add('bot', '⚠️ VAPID_PUBLIC is still the placeholder in index.html. Paste the real public key (from generate-vapid-keys) and upload the file again.'); return; }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64(VAPID_PUBLIC) });
+    const d = await call({ action: 'subscribe', sub: sub.toJSON() });
+    if (d.error === 'SESSION') { signOut(d.message); return; }
+    if (!d.ok) throw new Error('save failed'); syncPlans();
+    add('bot', '🔔 បានបើកការជូនដំណឹងថ្ងៃតាមដាន RC ហើយ។ អ្នកនឹងទទួលបានសារ ទោះបើបិទកម្មវិធីក៏ដោយ។\nRC monitoring date alerts are on. You will get them even when the app is closed.');
+  } catch (e) { console.error(e); add('bot', 'មិនអាចបើកការជូនដំណឹងបានទេ សូមព្យាយាមម្តងទៀត។\nCould not turn on alerts. Please try again.\n[' + (e && e.name) + ': ' + (e && e.message) + ']'); }
+  alertState();
+}
+async function alertsOff() {
+  try {
+    const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    if (sub) { const end = sub.endpoint; await sub.unsubscribe(); call({ action: 'unsubscribe', endpoint: end }).catch(() => {}); }
+  } catch (e) {}
+  add('bot', '🔕 បានបិទការជូនដំណឹង។\nAlerts are off.'); alertState();
+}
+$('alertb').onclick = () => { if ($('alertb').dataset.on) alertsOff(); else alertsOn(); };
+
+
+$('f').onsubmit = async e => {
+  e.preventDefault();
+  const q = $('q').value.trim(); if (!q) return;
+  stopSpeak(); unlockTts();
+  const oldOpt = $('optrow'); if (oldOpt) oldOpt.remove();
+  add('me', q); $('q').value = ''; $('q').style.height = 'auto'; $('send').disabled = true;
+  const w = add('bot', '…'); w.classList.add('typing'); setBusy(true);
+  try {
+    const d = await call({ action: 'ask', question: q, history: chatHist.slice(-6) });
+    if (d.error === 'SESSION') { signOut(d.message); return; }
+    const ans = d.answer || d.message || 'No answer.';
+    if (d.mode !== 'chat') { fmt(w, ans); addFb(w, 'child', '', ''); if (d.options || d.choices) showOpts(d); }   // anything that is not a general chat answer (child data, CVC lists, errors): never read aloud, rating-only feedback
+    else { fill(w, ans); addSpk(w, ans); addCopy(w); addFb(w, 'chat', q, ans); if (autoSpeak || viaMic) speak(ans); }
+    viaMic = false;
+    if (d.mode === 'chat') { chatHist.push({ r: 'user', t: q }, { r: 'model', t: ans }); if (chatHist.length > 12) chatHist.splice(0, chatHist.length - 12); }
+  } catch (err) {
+    console.error(err); w.classList.remove('typing'); w.textContent = NETMSG(err);
+    const rb = document.createElement('button'); rb.type = 'button'; rb.className = 'spk'; rb.textContent = '↻ ព្យាយាមម្តងទៀត / Retry';
+    rb.onclick = () => { const p = w.previousElementSibling; if (p && p.classList.contains('me')) p.remove(); w.remove(); $('q').value = q; $('f').requestSubmit(); };
+    w.appendChild(rb);
+  }
+  setBusy(false); $('send').disabled = false; $('q').focus();
+};
+
+const grow = () => { const q = $('q'); q.style.height = 'auto'; q.style.height = Math.min(q.scrollHeight, 140) + 'px'; };
+$('q').addEventListener('input', grow);
+$('q').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('f').requestSubmit(); } });
+$('chips').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.cal) { openCal(); return; }
+  if (b.dataset.wv) { add('me', 'អំពីអង្គការទស្សនៈពិភពលោក'); wvMenu('សូមជ្រើសរើសសំណួរដែលអ្នកចង់ដឹង៖'); return; }
+  if (b.dataset.cp) { add('me', 'ការការពារកុមារ និង Do & Don’t'); cpMenu('សូមជ្រើសរើសប្រធានបទដែលអ្នកចង់ដឹង៖'); return; }
+  $('q').value = b.dataset.t; grow(); $('q').focus();
+  if (b.dataset.send) $('f').requestSubmit();
+});
+
+/* ---------------- child pills: pick what to see instead of showing everything ---------------- */
+function optRow(items, onPick, actions, key) {
+  const old = $('optrow'); if (old) old.remove();
+  const d = document.createElement('div'); d.id = 'optrow'; d.className = 'optrow';
+  items.forEach(it => { const b = document.createElement('button'); b.type = 'button'; b.textContent = it.label; b.onclick = () => onPick(it); d.appendChild(b); });
+  (actions || []).forEach(a => {   // Location + RCM Form (Report / Close)
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'act'; b.textContent = a.label;
+    b.onclick = a.url ? () => window.open(a.url, '_blank', 'noopener') : () => openRcm(key, a.rcm);
+    d.appendChild(b);
+  });
+  $('log').appendChild(d); $('log').scrollTop = 1e9;
+}
+const KID = {};   // child key -> first reply (all sections), so tapping a pill needs no server call
+function showOpts(d) {
+  if (d.key && d.sections) KID[d.key] = d;
+  if (d.options && d.options.length) optRow(d.options, it => childAsk(d.key, it.id), d.actions, d.key);
+  else if (d.choices && d.choices.length) optRow(d.choices, it => childAsk(it.key, 'menu'));
+}
+// Opens the dashboard's RCM form for this child, already signed in (one-time link, valid 2 minutes).
+async function openRcm(key, type) {
+  const w = window.open('', '_blank');   // opened first so phone browsers don't block it
+  try {
+    const d = await call({ action: 'sso', target: 'rcm', key, type });
+    if (d.ok && d.url) { if (w) w.location.href = d.url; else location.href = d.url; return; }
+    throw new Error(d.message || 'failed');
+  } catch (err) { if (w) w.close(); alert('មិនអាចបើកទម្រង់ RCM បានទេ សូមព្យាយាមម្តងទៀត។\nCannot open the RCM form. Please try again.'); }
+}
+async function childAsk(key, section) {
+  stopSpeak();
+  const old = $('optrow'); if (old) old.remove();
+  const kid = KID[key];
+  if (kid && kid.sections && kid.sections[section]) {   // instant: already on the phone
+    const m = document.createElement('div'); m.className = 'm bot'; $('log').appendChild(m);
+    fmt(m, kid.sections[section]); showOpts(kid); return;
+  }
+  const w = document.createElement('div'); w.className = 'm bot'; w.textContent = '…';   // no read-aloud button: child details are never spoken
+  $('log').appendChild(w); $('log').scrollTop = 1e9; setBusy(true);
+  try {
+    const d = await call({ action: 'child', key, section });
+    if (d.error === 'SESSION') { signOut(d.message); return; }
+    fmt(w, d.answer || d.message || 'រកមិនឃើញទេ។');
+    showOpts(d);
+  } catch (err) { console.error(err); w.textContent = NETMSG(err); }
+  setBusy(false);
+}
+
+/* ---------------- About World Vision: fixed questions and answers (no server call, no Gemini quota) ---------------- */
+const WV_LINK = '\n\nព័ត៌មានបន្ថែម / More: [wvi.org](https://www.wvi.org/about-us)';
+const WV = [
+  { q: '🌟 ចក្ខុវិស័យរបស់ទស្សនៈពិភពលោកជាអ្វី?', a: [
+    '🌟 ចក្ខុវិស័យ (Vision)',
+    '',
+    'សម្រាប់កុមារគ្រប់រូប មានជីវិតដ៏បរិបូរណ៍។',
+    '(Our vision for every child, life in all its fullness.)',
+    '',
+    'ការអធិស្ឋានរបស់យើង៖ សម្រាប់ដួងចិត្តគ្រប់រូប មានឆន្ទៈធ្វើឱ្យវាកើតឡើង។',
+    '',
+    'ចំណុចសំខាន់៖',
+    '• ផ្តោតលើកុមារដែលងាយរងគ្រោះបំផុត ដើម្បីឱ្យពួកគេរួចផុតពីភាពក្រីក្រ និងមានជីវិតដ៏បរិបូរណ៍',
+    '• សេចក្តីប្រាថ្នាសម្រាប់កុមារ៖ មានសុខភាពល្អ ទទួលបានការអប់រំសម្រាប់ជីវិត ទទួលបានការថែរក្សា និងការការពារ ហើយដឹងពីសេចក្តីស្រឡាញ់របស់ព្រះ និងអ្នកជិតខាង',
+    '• ទស្សនៈពិភពលោកបម្រើមនុស្សគ្រប់រូប ដោយមិនប្រកាន់សាសនា ជាតិសាសន៍ ពូជសាសន៍ ឬភេទ'
+  ].join('\n') + WV_LINK },
+  { q: '🎯 បេសកកម្មរបស់ទស្សនៈពិភពលោកជាអ្វី?', a: [
+    '🎯 បេសកកម្ម (Mission)',
+    '',
+    'ទស្សនៈពិភពលោកជាភាពជាដៃគូអន្តរជាតិនៃគ្រីស្ទបរិស័ទ ដែលមានបេសកកម្មដើរតាមព្រះអម្ចាស់ និងព្រះសង្គ្រោះរបស់យើង គឺព្រះយេស៊ូវគ្រីស្ទ ក្នុងការធ្វើការជាមួយអ្នកក្រីក្រ និងអ្នកត្រូវគេជិះជាន់ ដើម្បីជំរុញការផ្លាស់ប្តូរមនុស្ស ស្វែងរកយុត្តិធម៌ និងធ្វើជាសាក្សីអំពីដំណឹងល្អនៃព្រះរាជ្យរបស់ព្រះ។',
+    '',
+    'យើងអនុវត្តបេសកកម្មនេះតាមរយៈការប្តេជ្ញាចិត្តរួមបញ្ចូលគ្នា ៖',
+    '• ការអភិវឌ្ឍដែលផ្លាស់ប្តូរជីវិត ផ្អែកលើសហគមន៍ និងស្ថិតស្ថេរ ដោយផ្តោតជាពិសេសលើតម្រូវការរបស់កុមារ',
+    '• ការជួយសង្គ្រោះបន្ទាន់ក្នុងគ្រាមហន្តរាយ',
+    '• ការជំរុញយុត្តិធម៌',
+    '• ការគាំទ្រព្រះវិហារក្នុងបេសកកម្មរបស់ខ្លួន',
+    '• ការលើកកម្ពស់ការយល់ដឹងរបស់សាធារណជន',
+    '• ការធ្វើជាសាក្សីអំពីព្រះយេស៊ូវគ្រីស្ទ'
+  ].join('\n') + WV_LINK },
+  { q: '💛 គុណតម្លៃស្នូលទាំង ៦ មានអ្វីខ្លះ?', a: [
+    '💛 គុណតម្លៃស្នូលទាំង ៦ (Core Values)',
+    '',
+    '1. យើងជាគ្រីស្ទបរិស័ទ — ជំនឿលើព្រះគ្រីស្ទជាចំណុចស្នូលនៃអត្តសញ្ញាណ និងការជំរុញចិត្តបម្រើរបស់យើង',
+    '2. យើងប្តេជ្ញាចិត្តចំពោះអ្នកក្រីក្រ — ធ្វើការជាមួយអ្នកក្រីក្រ និងអ្នកត្រូវគេជិះជាន់ ក្នុងការស្វែងរកយុត្តិធម៌ សន្តិភាព ការផ្សះផ្សា និងការព្យាបាលរបួស',
+    '3. យើងឱ្យតម្លៃមនុស្ស — គោរពសេចក្តីថ្លៃថ្នូរ និងតម្លៃរបស់មនុស្សគ្រប់រូប ដោយដាក់មនុស្សមុនលុយ រចនាសម្ព័ន្ធ និងប្រព័ន្ធ',
+    '4. យើងជាអ្នកគ្រប់គ្រងទ្រព្យ (Stewards) — ធនធានមិនមែនជារបស់យើងទេ ដូច្នេះយើងរក្សាស្តង់ដារវិជ្ជាជីវៈ និងគណនេយ្យភាពខ្ពស់',
+    '5. យើងជាដៃគូ — ធ្វើការជាមួយអ្នកក្រ ម្ចាស់ជំនួយ និងដៃគូផ្សេងៗ ដោយការគោរពគ្នាទៅវិញទៅមក',
+    '6. យើងឆ្លើយតប — ឆ្លើយតបនឹងគ្រាអាសន្នដែលគំរាមជីវិត ជាកន្លែងដែលការចូលរួមរបស់យើងអាចធ្វើឱ្យមានភាពខុសគ្នា',
+    '',
+    'គុណតម្លៃមិនអាចចេញជាច្បាប់បានទេ ត្រូវតែរស់នៅតាមវា។'
+  ].join('\n') + WV_LINK },
+  { q: '📜 ប្រវត្តិរបស់ទស្សនៈពិភពលោក', a: [
+    '📜 ប្រវត្តិរបស់ទស្សនៈពិភពលោក',
+    '',
+    '• ឆ្នាំ ១៩៤៧ — លោក Bob Pierce ជួបគ្រូម្នាក់នៅប្រទេសចិន ដែលថែរក្សាកុមារីម្នាក់ត្រូវគេបោះបង់ចោល។ លោកសន្យាផ្ញើប្រាក់រៀងរាល់ខែដើម្បីជួយ។ នេះជាចំណុចប្រែប្រួលសម្រាប់លោក',
+    '• ឆ្នាំ ១៩៥០ — ទស្សនៈពិភពលោកត្រូវបានបង្កើតឡើងដោយលោក Bob Pierce',
+    '• ឆ្នាំ ១៩៥៣ — កម្មវិធីឧបត្ថម្ភកុមារដំបូង ចាប់ផ្តើមដើម្បីជួយកុមារកំព្រារាប់សែននាក់ នៅចុងសង្គ្រាមកូរ៉េ',
+    '',
+    'នៅកម្ពុជា៖',
+    '• ឆ្នាំ ១៩៧០ — ចាប់ផ្តើមការងារនៅកម្ពុជា',
+    '• ឆ្នាំ ១៩៧៥ — កម្មវិធីត្រូវបិទ ដោយសារស្ថានភាពសង្គ្រាម',
+    '• ទសវត្សរ៍ ១៩៨០ — ត្រឡប់មកបន្តប្រតិបត្តិការនៅកម្ពុជាវិញ',
+    '• ចាប់ពីពាក់កណ្តាលទសវត្សរ៍ ១៩៩០ — កម្មវិធីអភិវឌ្ឍតាមតំបន់ (ADP) ដែលគាំទ្រដោយការឧបត្ថម្ភកុមារ ជួយសហគមន៍ឱ្យទទួលបានការអប់រំ និងសុខាភិបាលកាន់តែប្រសើរ ពង្រឹងជីវភាព សម្អាតមីន និងបង្កើតបរិស្ថានសុវត្ថិភាពសម្រាប់កុមារ',
+    '• ឆ្នាំ ២០២៦ — ខួបទី ៥៦ ឆ្នាំនៅកម្ពុជា ដោយបានវិនិយោគជាង ៦៥០ លានដុល្លារអាមេរិកសម្រាប់សុខុមាលភាពកុមារ'
+  ].join('\n') + '\n\nព័ត៌មានបន្ថែម / More: [wvi.org](https://www.wvi.org/about-us)' },
+  { q: '🏘️ តើគម្រោងត្រូវបានអនុវត្តយ៉ាងដូចម្តេច?', a: [
+    '🏘️ ការអនុវត្តគម្រោង',
+    '',
+    'ទស្សនៈពិភពលោកធ្វើការតាមវិធីសាស្ត្រផ្អែកលើសហគមន៍ តាមរយៈ «កម្មវិធីអភិវឌ្ឍតាមតំបន់» (Area Development Programme - ADP)៖',
+    '',
+    '1. វាយតម្លៃតម្រូវការ — បុគ្គលិកក្នុងតំបន់ធ្វើការជាមួយតំណាងសហគមន៍ អាជ្ញាធរមូលដ្ឋាន និងអង្គការដៃគូ',
+    '2. រៀបចំផែនការរួមគ្នា — ផែនការរយៈពេលវែង (ជាទូទៅប្រហែល ១៥ ឆ្នាំ) ផ្តោតលើសុខភាព ការអប់រំ ទឹកស្អាត ជីវភាព និងការការពារកុមារ',
+    '3. អនុវត្តជាមួយសហគមន៍ — សហគមន៍ជាអ្នកកំណត់អាទិភាព និងចូលរួមដោយផ្ទាល់',
+    '4. តាមដាន និងវាស់វែង — គម្រោងត្រូវបានវាស់វែងប្រៀបធៀបនឹងគោលដៅជាប្រចាំ',
+    '5. ភាពស្ថិតស្ថេរ — ធ្វើឱ្យសហគមន៍អាចបន្តដោយខ្លួនឯងបាន នៅពេលទស្សនៈពិភពលោកបញ្ចប់ការងារក្នុងតំបន់',
+    '',
+    'ប្រាក់ឧបត្ថម្ភពីអ្នកឧបត្ថម្ភជាច្រើនត្រូវបានប្រមូលរួម ដើម្បីផ្តល់ផលប្រយោជន៍ដល់កុមារ និងគ្រួសារទាំងមូលក្នុងសហគមន៍។',
+    '',
+    'ចំណាំ៖ នេះជាទិដ្ឋភាពទូទៅ។ សម្រាប់ព័ត៌មានលម្អិតអំពីគម្រោងក្នុងតំបន់របស់អ្នក សូមសួរអ្នកគ្រប់គ្រងកម្មវិធី។'
+  ].join('\n') + '\n\nព័ត៌មានបន្ថែម / More: [wvi.org](https://www.wvi.org/child-sponsorship)' },
+  { q: '🧒 តើការឧបត្ថម្ភកុមារដំណើរការយ៉ាងដូចម្តេច?', a: [
+    '🧒 ការឧបត្ថម្ភកុមារ (Child Sponsorship)',
+    '',
+    '• អ្នកឧបត្ថម្ភម្នាក់ភ្ជាប់ជាមួយកុមារម្នាក់ ហើយផ្តល់ជំនួយរៀងរាល់ខែ។ អ្នកឧបត្ថម្ភ និងកុមារអាចទំនាក់ទំនងគ្នាតាមរយៈលិខិត',
+    '• ប្រាក់ឧបត្ថម្ភត្រូវបានប្រមូលរួមជាមួយអ្នកឧបត្ថម្ភផ្សេងទៀតក្នុងសហគមន៍តែមួយ ហើយប្រើសម្រាប់កម្មវិធីអភិវឌ្ឍសហគមន៍ — មិនផ្តល់ជាសាច់ប្រាក់ផ្ទាល់ដល់កុមារ ឬគ្រួសារទេ',
+    '• ការជ្រើសរើសកុមារ — សហគមន៍ជ្រើសរើសកុមារដែលងាយរងគ្រោះបំផុត ហើយបុគ្គលិកផ្ទៀងផ្ទាត់បញ្ជីឈ្មោះ',
+    '• ការចូលរួមជាការស្ម័គ្រចិត្ត — គ្រួសារ និងកុមារសម្រេចចិត្តដោយខ្លួនឯងថាចូលរួមឬអត់ ជាទូទៅមួយគ្រួសារមួយកុមារ',
+    '• កុមារដែលបានចុះឈ្មោះ (RC) ជាតំណាងនៃកុមារទាំងអស់ក្នុងសហគមន៍',
+    '• ផលប្រយោជន៍ដល់សហគមន៍ទាំងមូល — ទស្សនៈពិភពលោកបញ្ជាក់ថា កុមារម្នាក់ដែលទទួលបានការឧបត្ថម្ភ ធ្វើឱ្យកុមារផ្សេងទៀតប្រហែលបួននាក់ទទួលបានផលប្រយោជន៍ផងដែរ'
+  ].join('\n') + '\n\nព័ត៌មានបន្ថែម / More: [wvi.org](https://www.wvi.org/child-sponsorship)' }
+];
+function wvMenu(title) {
+  const old = $('wvmenu'); if (old) old.remove();
+  const d = document.createElement('div'); d.id = 'wvmenu'; d.className = 'm bot menu';
+  const h = document.createElement('div'); h.className = 'mh'; h.textContent = title; d.appendChild(h);
+  WV.forEach(it => { const b = document.createElement('button'); b.type = 'button'; b.textContent = it.q; b.onclick = () => wvShow(it); d.appendChild(b); });
+  $('log').appendChild(d); $('log').scrollTop = 1e9;
+}
+function wvShow(it) {
+  add('me', it.q);
+  const a = add('bot', it.a);
+  wvMenu('ចង់ដឹងអ្វីទៀត?');
+  a.scrollIntoView({ block: 'start' });
+}
+
+/* ---------------- Child protection protocol + Do & Don’t (fixed content, no server call) ---------------- */
+const CP_NOTE = '\n\nចំណាំ៖ នេះជាការណែនាំទូទៅសម្រាប់ CVC។ សម្រាប់ករណីជាក់លាក់ សូមទាក់ទងអ្នកគ្រប់គ្រង ADP ឬអ្នកទទួលបន្ទុកការពារកុមារ។';
+const CP = [
+  { q: '🛡️ តើការការពារកុមារជាអ្វី?', a: [
+    '🛡️ ការការពារកុមារ (Child Protection)',
+    '',
+    'កុមារគ្រប់រូបមានសិទ្ធិរស់នៅដោយសុវត្ថិភាព ឆ្ងាយពីអំពើហិង្សា ការរំលោភបំពាន ការធ្វេសប្រហែស និងការកេងប្រវ័ញ្ច។',
+    '',
+    'ចំណុចសំខាន់៖',
+    '• ការការពារកុមារជាទំនួលខុសត្រូវរបស់មនុស្សគ្រប់រូប — រួមទាំង CVC ផងដែរ',
+    '• ទស្សនៈពិភពលោកមិនអត់ឱនចំពោះការរំលោភបំពានកុមារឡើយ (Zero tolerance)',
+    '• ផលប្រយោជន៍ល្អបំផុតរបស់កុមារ ត្រូវមកមុនជានិច្ច',
+    '• CVC ជាភ្នែក និងត្រចៀករបស់សហគមន៍ — តួនាទីគឺ សង្កេត ស្តាប់ និងរាយការណ៍ មិនមែនស៊ើបអង្កេតទេ',
+    '• កុមារគ្រប់រូបត្រូវទទួលការគោរពស្មើគ្នា ដោយមិនប្រកាន់ភេទ សាសនា ជាតិសាសន៍ ពិការភាព ឬស្ថានភាពគ្រួសារ'
+  ].join('\n') + CP_NOTE },
+  { q: '⚠️ ប្រភេទនៃការរំលោភបំពាន និងសញ្ញាព្រមាន', a: [
+    '⚠️ ប្រភេទនៃការរំលោភបំពាន',
+    '',
+    '• រាងកាយ — ទះ វាយ ដុត ធ្វើទារុណកម្ម',
+    '• ផ្លូវចិត្ត — ជេរ ប្រមាថ គំរាម ធ្វើឱ្យអាម៉ាស់ ឬមិនអើពើ',
+    '• ផ្លូវភេទ — ប៉ះពាល់ ឬនិយាយអំពីផ្លូវភេទមិនសមរម្យ ថតរូបអសីលធម៌',
+    '• ការធ្វេសប្រហែស — មិនផ្តល់អាហារ សុខភាព ការអប់រំ និងការមើលថែ',
+    '• ការកេងប្រវ័ញ្ច — ពលកម្មកុមារ ការជួញដូរ ចំណាកស្រុកមិនសុវត្ថិភាព អាពាហ៍ពិពាហ៍ក្មេងជាង១៨ឆ្នាំ',
+    '',
+    '🔎 សញ្ញាព្រមាន',
+    '',
+    '• មានស្នាមជាំ ឬរបួសដែលពន្យល់មិនបាន',
+    '• ភ័យខ្លាច ស្ងាត់ស្ងៀម ឆាប់ខឹង ឬអាកប្បកិរិយាប្រែប្រួលភ្លាមៗ',
+    '• ឈប់រៀន ឬអវត្តមានញឹកញាប់ដោយគ្មានមូលហេតុ',
+    '• ខ្លាចត្រឡប់ទៅផ្ទះ ឬខ្លាចមនុស្សពេញវ័យម្នាក់',
+    '• មើលទៅមិនត្រូវបានថែរក្សា — ស្គម កខ្វក់ ឈឺមិនបានព្យាបាល',
+    '• ត្រូវបានបញ្ជូនទៅធ្វើការ ឬរៀបការទាំងវ័យក្មេង',
+    '',
+    'សញ្ញាមួយមិនមែនជាភស្តុតាងទេ ប៉ុន្តែជាហេតុផលគ្រប់គ្រាន់ដើម្បីរាយការណ៍។'
+  ].join('\n') + CP_NOTE },
+  { q: '🚨 ពិធីសារ៖ ពេលសង្ស័យ ឬឃើញការរំលោភបំពាន', a: [
+    '🚨 ពិធីសារការពារកុមារ (Protocol)',
+    '',
+    '១. ធានាសុវត្ថិភាពកុមារមុន — បើមានគ្រោះថ្នាក់ភ្លាមៗ សូមហៅអាជ្ញាធរ ឬប៉ូលិស (1288)',
+    '២. ស្តាប់ដោយស្ងប់ស្ងាត់ — ជឿកុមារ កុំសួរសំណួរនាំ កុំបន្ទោស',
+    '៣. កុំស៊ើបអង្កេតខ្លួនឯង ហើយកុំប្រឈមមុខជាមួយអ្នកសង្ស័យ',
+    '៤. កុំសន្យារក្សាសម្ងាត់ទាំងស្រុង — ប្រាប់កុមារថា អ្នកត្រូវប្រាប់អ្នកដែលអាចជួយគាត់បាន',
+    '៥. កត់ត្រាតាមការពិត — ថ្ងៃ ម៉ោង កន្លែង និងពាក្យរបស់កុមារ (មិនបន្ថែមការស្មាន)',
+    '៦. រាយការណ៍ភ្លាមៗ មិនឱ្យលើសពី ២៤ ម៉ោង',
+    '៧. រក្សាការសម្ងាត់ — ប្រាប់តែអ្នកដែលត្រូវដឹង កុំនិយាយក្នុងសហគមន៍ ឬបណ្តាញសង្គម',
+    '',
+    '📶 ថ្នាក់នៃការរាយការណ៍',
+    '',
+    '• ថ្នាក់សហគមន៍ (CVC) — ប្រាប់អ្នកទទួលបន្ទុកការពារកុមារ ឬបុគ្គលិក ADP របស់ទស្សនៈពិភពលោកភ្លាមៗ',
+    '• ថ្នាក់ ADP — អ្នកគ្រប់គ្រង ADP ដំណើរការតាមនីតិវិធីអង្គការ ហើយជូនដំណឹងទៅការិយាល័យជាតិ',
+    '• ថ្នាក់អាជ្ញាធរ — គណៈកម្មាធិការទទួលបន្ទុកកិច្ចការស្ត្រី និងកុមារឃុំ/សង្កាត់ (គ.ក.ស.ក.) អាជ្ញាធរមូលដ្ឋាន ប៉ូលិស និងមន្ទីរសង្គមកិច្ច ដោយមានបុគ្គលិកទស្សនៈពិភពលោកដឹកនាំ',
+    '',
+    '📞 លេខទូរស័ព្ទបន្ទាន់',
+    '',
+    '• ខ្សែទូរស័ព្ទកុមារកម្ពុជា (Child Helpline) — 1280 ឥតគិតថ្លៃ ២៤ ម៉ោង',
+    '• ប៉ូលិសជាតិ — 1288',
+    '',
+    'ប្រសិនបើអ្នកសង្ស័យជាបុគ្គលិក ឬអ្នកស្ម័គ្រចិត្តរបស់ទស្សនៈពិភពលោកផ្ទាល់ ក៏ត្រូវរាយការណ៍ភ្លាមៗដែរ តាមបណ្តាញរាយការណ៍របស់អង្គការ។'
+  ].join('\n') + CP_NOTE },
+  { q: '✅❌ Do & Don’t — ការប្រព្រឹត្តចំពោះកុមារ', a: [
+    '✅❌ Do & Don’t — ការប្រព្រឹត្តចំពោះកុមារ',
+    '',
+    '✅ ត្រូវធ្វើ (DO)',
+    '• និយាយដោយគោរព សុភាព និងលើកទឹកចិត្ត',
+    '• ធ្វើការជាមួយកុមារក្នុងកន្លែងបើកចំហ ដែលអ្នកផ្សេងមើលឃើញ',
+    '• មានមនុស្សពេញវ័យម្នាក់ទៀតនៅជាមួយ ពេលជួបកុមារ',
+    '• ស្តាប់កុមារ ហើយយកចិត្តទុកដាក់ចំពោះអ្វីដែលគេនិយាយ',
+    '• ប្រើវិន័យវិជ្ជមាន (ពន្យល់ លើកទឹកចិត្ត) ជំនួសការដាក់ទណ្ឌកម្ម',
+    '• ចាត់ទុកកុមារគ្រប់រូបស្មើគ្នា និងលើកទឹកចិត្តឱ្យចូលរួមតាមវ័យ',
+    '• ធ្វើជាគំរូល្អ ទាំងពាក្យសម្តី និងអាកប្បកិរិយា',
+    '',
+    '❌ មិនត្រូវធ្វើ (DON’T)',
+    '• មិនវាយ មិនបង្ខំ មិនជេរ មិនប្រមាថ ឬធ្វើឱ្យកុមារអាម៉ាស់',
+    '• មិនទៅតែពីរនាក់ជាមួយកុមារ ក្នុងកន្លែងបិទជិត ឬឯកជន',
+    '• មិនប៉ះពាល់រាងកាយមិនសមរម្យ ឬនិយាយលេងអំពីផ្លូវភេទ',
+    '• មិនផ្តល់លុយ អំណោយ ឬអត្ថប្រយោជន៍ពិសេសដល់កុមារម្នាក់ ដើម្បីទទួលបានអ្វីមកវិញ',
+    '• មិនបង្ខំកុមារឱ្យធ្វើការគ្រោះថ្នាក់ ឬរំខានដល់ការសិក្សា',
+    '• មិនបង្ហាញការពេញចិត្តកុមារម្នាក់ជាងកុមារផ្សេង ឬរើសអើងកុមារ',
+    '• មិនមើលរំលង ឬបិទបាំងករណីសង្ស័យ'
+  ].join('\n') + CP_NOTE },
+  { q: '🏠 Do & Don’t — ពេលចុះសួរសុខទុក្ខ និងសកម្មភាពសហគមន៍', a: [
+    '🏠 Do & Don’t — ចុះសួរសុខទុក្ខ និងសកម្មភាពសហគមន៍',
+    '',
+    '✅ ត្រូវធ្វើ (DO)',
+    '• ជូនដំណឹងអាណាព្យាបាលមុនពេលចុះជួប ហើយអញ្ជើញមនុស្សពេញវ័យម្នាក់ទៀតទៅជាមួយ',
+    '• សួរសុខទុក្ខកុមារ នៅមុខអាណាព្យាបាល ឬក្នុងកន្លែងបើកចំហ',
+    '• ពិនិត្យសុវត្ថិភាពកន្លែងប្រជុំ ឬសកម្មភាព មិនឱ្យកុមារនៅម្នាក់ឯង',
+    '• សង្កេតករណីឈប់រៀន ធ្វើការ ចំណាកស្រុក ឬរៀបការទាំងវ័យក្មេង',
+    '• ណែនាំអាណាព្យាបាលអំពីវិន័យវិជ្ជមាន និងសុវត្ថិភាពកុមារ',
+    '• រាយការណ៍ករណីព្រួយបារម្ភតាមពិធីសារ',
+    '',
+    '❌ មិនត្រូវធ្វើ (DON’T)',
+    '• មិននៅតែម្នាក់ឯងជាមួយកុមារក្នុងបន្ទប់បិទ ឬកន្លែងដាច់ស្រយាល',
+    '• មិនដឹកកុមារទៅកន្លែងផ្សេង (ម៉ូតូ ឡាន) តែពីរនាក់ ដោយគ្មានការអនុញ្ញាតអាណាព្យាបាល',
+    '• មិនឱ្យកុមារដេក ឬស្នាក់នៅជាមួយ ដោយគ្មានការអនុញ្ញាត',
+    '• មិនសួរសំណួរបែបស៊ើបអង្កេត ឬធ្វើឱ្យកុមារអាម៉ាស់ នៅមុខមនុស្សច្រើន',
+    '• មិនប្រើកុមារឱ្យធ្វើការងារផ្ទាល់ខ្លួន',
+    '• មិនចែករំលែកព័ត៌មានគ្រួសារ ឬកុមារ ជាមួយអ្នកដែលមិនពាក់ព័ន្ធ'
+  ].join('\n') + CP_NOTE },
+  { q: '📸 Do & Don’t — រូបថត ព័ត៌មាន និងបណ្តាញសង្គម', a: [
+    '📸 Do & Don’t — រូបថត ព័ត៌មាន និងបណ្តាញសង្គម',
+    '',
+    '✅ ត្រូវធ្វើ (DO)',
+    '• សុំការយល់ព្រមពីអាណាព្យាបាល និងកុមារ មុនថតរូប ឬសម្ភាសន៍',
+    '• ពន្យល់ថារូបថត ឬព័ត៌មាននឹងត្រូវប្រើដូចម្តេច',
+    '• ថតកុមារដែលស្លៀកពាក់សមរម្យ ក្នុងស្ថានភាពថ្លៃថ្នូរ និងវិជ្ជមាន',
+    '• រក្សាទុកព័ត៌មានកុមារ (ឈ្មោះ លេខ RC រូបថត) ក្នុងប្រព័ន្ធផ្លូវការ ដោយប្រើ PIN',
+    '• លុបរូប និងឯកសារចេញពីទូរស័ព្ទ បន្ទាប់ពីបញ្ជូនចូលប្រព័ន្ធផ្លូវការ',
+    '',
+    '❌ មិនត្រូវធ្វើ (DON’T)',
+    '• មិនផុសរូប ឈ្មោះ អាសយដ្ឋាន ឬលេខទូរស័ព្ទកុមារ លើ Facebook, Telegram, TikTok ឬក្រុមសាធារណៈ',
+    '• មិនថតកុមារក្នុងស្ថានភាពអាក្រាត ពាក់កណ្តាលអាក្រាត អាម៉ាស់ ឬមិនសមរម្យ',
+    '• មិនបញ្ជូនព័ត៌មានកុមារតាម Messenger ឬអ៊ីមែលផ្ទាល់ខ្លួន',
+    '• មិនបង្ហាញភាពក្រីក្រហួសហេតុ ដើម្បីទាក់ទាញការអាណិត',
+    '• មិនចែករំលែកព័ត៌មានកុមារជាមួយអ្នកដែលមិនពាក់ព័ន្ធ'
+  ].join('\n') + CP_NOTE },
+  { q: '✉️ Do & Don’t — លិខិត និងទំនាក់ទំនងអ្នកឧបត្ថម្ភ', a: [
+    '✉️ Do & Don’t — លិខិត និងទំនាក់ទំនងអ្នកឧបត្ថម្ភ',
+    '',
+    '✅ ត្រូវធ្វើ (DO)',
+    '• ជួយកុមារសរសេរលិខិតដោយសេរី តាមអត្ថន័យពិតរបស់កុមារ',
+    '• បញ្ជូនលិខិត និងអំណោយតាមបណ្តាញផ្លូវការរបស់ទស្សនៈពិភពលោកតែប៉ុណ្ណោះ',
+    '• ពិនិត្យលិខិតមុនបញ្ជូន កុំឱ្យមានព័ត៌មានផ្ទាល់ខ្លួនលម្អិតហួសហេតុ',
+    '• រាយការណ៍ ប្រសិនបើអ្នកឧបត្ថម្ភសុំព័ត៌មានទំនាក់ទំនងផ្ទាល់ ឬសុំជួបកុមារដោយឯកជន',
+    '',
+    '❌ មិនត្រូវធ្វើ (DON’T)',
+    '• មិនផ្តល់អាសយដ្ឋាន លេខទូរស័ព្ទ ឬគណនីបណ្តាញសង្គមរបស់កុមារ/គ្រួសារ ដល់អ្នកឧបត្ថម្ភ',
+    '• មិនទទួល ឬបញ្ជូនលុយ ឬអំណោយផ្ទាល់ខ្លួន រវាងអ្នកឧបត្ថម្ភ និងកុមារ ក្រៅបណ្តាញអង្គការ',
+    '• មិននាំអ្នកឧបត្ថម្ភទៅជួបកុមារតែពីរនាក់ ឬដោយគ្មានការអនុញ្ញាតពីអង្គការ',
+    '• មិនកែខ្លឹមសារលិខិតរបស់កុមារ ដើម្បីបំពេញចិត្តអ្នកឧបត្ថម្ភ',
+    '• មិនសន្យាកុមារ ឬគ្រួសារថានឹងទទួលបានលុយ ឬអំណោយបន្ថែម'
+  ].join('\n') + CP_NOTE }
+];
+function cpMenu(title) {
+  const old = $('cpmenu'); if (old) old.remove();
+  const d = document.createElement('div'); d.id = 'cpmenu'; d.className = 'm bot menu';
+  const h = document.createElement('div'); h.className = 'mh'; h.textContent = title; d.appendChild(h);
+  CP.forEach(it => { const b = document.createElement('button'); b.type = 'button'; b.textContent = it.q; b.onclick = () => cpShow(it); d.appendChild(b); });
+  $('log').appendChild(d); $('log').scrollTop = 1e9;
+}
+function cpShow(it) {
+  add('me', it.q);
+  const a = add('bot', it.a);
+  cpMenu('ចង់ដឹងអ្វីទៀត?');
+  a.scrollIntoView({ block: 'start' });
+}
+
+/* ---------------- copy: every answer gets a Copy button; text is also selectable ---------------- */
+function textOf(el) {
+  let out = '';
+  const walk = n => n.childNodes.forEach(c => {
+    if (c.nodeType === 3) { out += c.nodeValue; return; }
+    if (c.nodeType !== 1 || c.classList.contains('spk') || c.classList.contains('cpy')) return;
+    if (c.tagName === 'A') { const h = c.getAttribute('href'); out += c.textContent + (h && /^https?:/.test(h) ? ' (' + h + ')' : ''); return; }
+    if (c.classList.contains('kr')) { out += c.children[0].textContent + ': '; walk(c.children[1]); out += '\n'; return; }
+    if (c.tagName === 'TABLE') { c.querySelectorAll('tr').forEach(r => { out += Array.from(r.children).map(x => x.textContent).join('\t') + '\n'; }); return; }
+    if (c.classList.contains('kt') || c.classList.contains('kp')) { walk(c); out += '\n'; return; }
+    walk(c);
+  });
+  walk(el);
+  return out.replace(/\n{3,}/g, '\n\n').trim();
+}
+async function copyText(t, btn) {
+  let ok = false;
+  try { await navigator.clipboard.writeText(t); ok = true; }
+  catch (e) {
+    try {
+      const ta = document.createElement('textarea'); ta.value = t; ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+      document.body.appendChild(ta); ta.focus(); ta.select(); ta.setSelectionRange(0, t.length); ok = document.execCommand('copy'); ta.remove();
+    } catch (e2) {}
+  }
+  const old = btn.dataset.l || btn.textContent; btn.dataset.l = old;
+  btn.textContent = ok ? '✔ បានចម្លង / Copied' : '⚠️ ចម្លងមិនបាន / Failed';
+  setTimeout(() => { btn.textContent = old; }, 1600);
+}
+function addCopy(el) {
+  if (el.querySelector(':scope > .cpy')) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'cpy'; b.textContent = '📋 ចម្លង / Copy';
+  b.onclick = () => copyText(textOf(el), b);
+  el.appendChild(b);
+}
+
+/* ---------------- voice input: record -> 16 kHz WAV -> server transcribes -> text goes in the box ---------------- */
+let mr = null, chunks = [], stream = null, tick = null, t0 = 0, cancelled = false;
+const MAXSEC = 60;
+const MIC_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 15.5a4 4 0 0 0 4-4V6a4 4 0 0 0-8 0v5.5a4 4 0 0 0 4 4z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.2"/></svg>';
+const STOP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5" fill="currentColor"/></svg>';
+function recMsg(txt, keepButtons) {
+  $('rec').style.display = 'flex'; $('recmsg').textContent = txt;
+  $('recok').style.display = $('recx').style.display = keepButtons ? '' : 'none';
+}
+function recHide() { $('rec').style.display = 'none'; }
+function toWavBuffer(pcm, sr) {
+  const n = pcm.length, b = new ArrayBuffer(44 + n * 2), v = new DataView(b);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) { const s = Math.max(-1, Math.min(1, pcm[i])); v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true); }
+  return b;
+}
+async function blobToWav16k(blob) {
+  const AC = window.AudioContext || window.webkitAudioContext, ctx = new AC();
+  const raw = await blob.arrayBuffer();
+  const audio = await new Promise((res, rej) => ctx.decodeAudioData(raw, res, rej));
+  try { ctx.close(); } catch (e) {}
+  const sr = 16000, off = new OfflineAudioContext(1, Math.max(1, Math.ceil(audio.duration * sr)), sr);
+  const src = off.createBufferSource(); src.buffer = audio; src.connect(off.destination); src.start();
+  const out = await off.startRendering();
+  return toWavBuffer(out.getChannelData(0), sr);
+}
+function b64(buf) {
+  const u = new Uint8Array(buf); let s = '';
+  for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+async function startRec() {
+  if (!navigator.mediaDevices || !window.MediaRecorder) { recMsg('ឧបករណ៍នេះមិនគាំទ្រការថតសំឡេងទេ។ / Recording is not supported on this device.', false); setTimeout(recHide, 4000); return; }
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+  catch (e) { recMsg('សូមអនុញ្ញាតឱ្យប្រើមីក្រូហ្វូន ក្នុងការកំណត់កម្មវិធីរុករក។ / Please allow the microphone.', false); setTimeout(recHide, 5000); return; }
+  const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+  const mt = types.find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+  mr = mt ? new MediaRecorder(stream, { mimeType: mt }) : new MediaRecorder(stream);
+  chunks = []; cancelled = false;
+  mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  mr.onstop = onRecStop;
+  mr.start(); t0 = Date.now();
+  $('mic').classList.add('on'); $('mic').innerHTML = STOP_SVG; $('send').disabled = true; mode('listen', true);
+  const upd = () => {
+    const s = Math.floor((Date.now() - t0) / 1000);
+    recMsg('🔴 កំពុងថត… ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + ' — និយាយបានហើយ ចុច «បញ្ចប់»', true);
+    if (s >= MAXSEC) stopRec(false);
+  };
+  upd(); tick = setInterval(upd, 500);
+}
+function stopRec(cancel) {
+  cancelled = !!cancel; clearInterval(tick); tick = null;
+  if (mr && mr.state !== 'inactive') { try { mr.stop(); } catch (e) {} }
+  else if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  if (cancel) { recHide(); $('mic').classList.remove('on'); $('mic').innerHTML = MIC_SVG; $('send').disabled = false; }
+}
+async function onRecStop() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  $('mic').classList.remove('on'); $('mic').innerHTML = MIC_SVG; mode('listen', false);
+  if (cancelled || !chunks.length) { recHide(); $('send').disabled = false; return; }
+  recMsg('⏳ កំពុងបម្លែងសំឡេងទៅជាអក្សរ… / Converting your voice to text…', false);
+  try {
+    const wav = await blobToWav16k(new Blob(chunks, { type: (mr && mr.mimeType) || 'audio/webm' }));
+    const d = await call({ action: 'transcribe', audio: b64(wav) });
+    if (d.error === 'SESSION') { signOut(d.message); return; }
+    const txt = (d.text || '').trim();
+    if (txt) {
+      const q = $('q'); q.value = (q.value ? q.value.trim() + ' ' : '') + txt; viaMic = true; grow(); q.focus(); recHide();
+    } else { recMsg('មិនឮច្បាស់ទេ សូមនិយាយម្តងទៀត។ / Could not hear clearly. Please try again.', false); setTimeout(recHide, 4000); }
+  } catch (e) { recMsg('មានបញ្ហា សូមព្យាយាមម្តងទៀត។ / Something went wrong. Please try again.', false); setTimeout(recHide, 4000); }
+  $('send').disabled = false;
+}
+$('mic').onclick = () => { if (mr && mr.state === 'recording') stopRec(false); else startRec(); };
+$('recok').onclick = () => stopRec(false);
+$('recx').onclick = () => stopRec(true);
+
+/* ---------------- read aloud: uses the phone's built-in voice; the text is NOT sent to any server ---------------- */
+const TTS = 'speechSynthesis' in window;
+let autoSpeak = false, viaMic = false, voices = [], ttsWarned = false, curBtn = null;
+try { autoSpeak = localStorage.getItem('cvc_auto') === '1'; } catch (e) {}
+function loadVoices() { voices = TTS ? speechSynthesis.getVoices() : []; }
+if (TTS) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+const isKm = s => (s.match(/[\u1780-\u17FF]/g) || []).length > s.replace(/\s/g, '').length * 0.3;
+function speakable(t) {
+  return t.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/https?:\/\/\S+/g, '')
+    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE0F}\u2022\u2192]/gu, ' ')
+    .replace(/\s[\u2014\u2013]\s/g, ', ').replace(/[|*_#>]+/g, ' ');
+}
+function splitSpeech(t) {
+  const out = [];
+  const cut = s => { while (s.length > 200) { let i = s.lastIndexOf(' ', 200); if (i < 60) i = 200; out.push(s.slice(0, i).trim()); s = s.slice(i); } if (s.trim()) out.push(s.trim()); };
+  t.split(/\n+/).forEach(line => { (line.match(/[^\u17D4.!?]+[\u17D4.!?]*/g) || []).forEach(s => { if (s.trim()) cut(s.trim()); }); });
+  return out.filter(s => /[\p{L}\p{N}]/u.test(s));
+}
+function pickVoice(km) {
+  const w = km ? 'km' : 'en', norm = v => v.lang.toLowerCase().replace('_', '-');
+  return voices.find(v => norm(v).startsWith(w + '-')) || voices.find(v => norm(v).startsWith(w)) || null;
+}
+function unlockTts() { try { if (TTS) speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch (e) {} }  // lets iPhone speak later
+function stopSpeak() { talkId++; talking(false); try { if (TTS) speechSynthesis.cancel(); } catch (e) {} if (curBtn) { curBtn.classList.remove('on'); curBtn = null; } }
+function speak(text, btn) {
+  if (!TTS) { recMsg('ឧបករណ៍នេះមិនគាំទ្រការអានសំឡេងទេ។ / Reading aloud is not supported on this device.', false); setTimeout(recHide, 4000); return; }
+  stopSpeak(); loadVoices();
+  const parts = splitSpeech(speakable(text)); let skipped = false, last = null;
+  parts.forEach(p => {
+    const km = isKm(p), v = pickVoice(km);
+    if (km && !v) { skipped = true; return; }
+    const u = new SpeechSynthesisUtterance(p); u.lang = km ? 'km-KH' : 'en-US'; u.rate = 0.95; if (v) u.voice = v;
+    speechSynthesis.speak(u); last = u;
+  });
+  if (last) {
+    const id = ++talkId; talking(true); if (btn) { curBtn = btn; btn.classList.add('on'); }
+    last.onend = last.onerror = () => { if (id === talkId) talking(false); if (btn && curBtn === btn) { btn.classList.remove('on'); curBtn = null; } };
+  }
+  if (skipped && !ttsWarned) {
+    ttsWarned = true;
+    recMsg('ទូរស័ព្ទនេះមិនមានសំឡេងខ្មែរទេ។ សូមដំឡើង «Speech Services by Google» ហើយទាញយកសំឡេងខ្មែរ។ / No Khmer voice on this phone. Install Google Speech Services and download the Khmer voice.', false);
+    setTimeout(recHide, 9000);
+  }
+}
+// 👍/👎 under answers. Child answers send only the rating; question/answer text is sent for general chat only.
+function addFb(el, kind, q, a) {
+  [['👍', 1], ['👎', -1]].forEach(([ic, r]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'spk fb'; b.textContent = ic; b.setAttribute('aria-label', r > 0 ? 'Good answer' : 'Wrong answer');
+    b.onclick = async () => {
+      const bs = el.querySelectorAll('.fb'); bs.forEach(x => x.disabled = true);
+      try {
+        const d = await call({ action: 'feedback', rating: r, kind, q: kind === 'chat' ? q.slice(0, 300) : '', a: kind === 'chat' ? a.slice(0, 600) : '' }, 15000);
+        if (d && d.ok) { b.classList.add('sel'); return; }
+      } catch (e) { console.error(e); }
+      bs.forEach(x => x.disabled = false);
+    };
+    el.appendChild(b);
+  });
+}
+function addSpk(el, text) {
+  if (!TTS) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'spk'; b.textContent = '🔊 ស្តាប់ / Listen';
+  b.onclick = () => { if (curBtn === b) stopSpeak(); else speak(text, b); };
+  el.appendChild(b);
+}
+$('vol').textContent = autoSpeak ? '🔊' : '🔇';
+$('vol').onclick = () => {
+  autoSpeak = !autoSpeak; $('vol').textContent = autoSpeak ? '🔊' : '🔇';
+  try { localStorage.setItem('cvc_auto', autoSpeak ? '1' : '0'); } catch (e) {}
+  if (autoSpeak) unlockTts(); else stopSpeak();
+};
+
+if (token) signedIn('');
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+<script>window.MKH=(function(){var module={exports:{}},exports=module.exports,define;!function(e,a){if("function"==typeof define&&define.amd)define([],a);else if("object"==typeof module&&module.exports)module.exports=a();else{var n=a();e.momentkh=n,e.MoonPhase=n.MoonPhase,e.MonthIndex=n.MonthIndex,e.AnimalYear=n.AnimalYear,e.AnimalYearEmojis=n.AnimalYearEmojis,e.Sak=n.Sak,e.DayOfWeek=n.DayOfWeek}}("undefined"!=typeof self?self:this,function(){var e,a,n,t,r,o={},i=o;
+/**
+ * MomentKH - Standalone Khmer Calendar Library (TypeScript)
+ *
+ * A simplified, standalone library for Khmer calendar conversion
+ * No dependencies required
+ *
+ * Based on:
+ * - khmer_calendar.cpp implementation
+ * - Original momentkh library
+ *
+ * @version 2.0.0
+ * @license MIT
+ */
+Object.defineProperty(i,"__esModule",{value:!0}),i.constants=i.DayOfWeek=i.Sak=i.AnimalYear=i.MonthIndex=i.MoonPhase=void 0,i.fromGregorian=z,i.fromKhmer=Q,i.getNewYear=U,i.format=X,i.fromDate=Z,i.toDate=ee,function(e){e[e.Waxing=0]="Waxing",e[e.Waning=1]="Waning"}(e||(i.MoonPhase=e={})),function(e){e[e.Migasir=0]="Migasir",e[e.Boss=1]="Boss",e[e.Meak=2]="Meak",e[e.Phalkun=3]="Phalkun",e[e.Cheit=4]="Cheit",e[e.Pisakh=5]="Pisakh",e[e.Jesth=6]="Jesth",e[e.Asadh=7]="Asadh",e[e.Srap=8]="Srap",e[e.Phatrabot=9]="Phatrabot",e[e.Assoch=10]="Assoch",e[e.Kadeuk=11]="Kadeuk",e[e.Pathamasadh=12]="Pathamasadh",e[e.Tutiyasadh=13]="Tutiyasadh"}(a||(i.MonthIndex=a={})),function(e){e[e.Chhut=0]="Chhut",e[e.Chlov=1]="Chlov",e[e.Khal=2]="Khal",e[e.Thos=3]="Thos",e[e.Rong=4]="Rong",e[e.Masagn=5]="Masagn",e[e.Momee=6]="Momee",e[e.Momae=7]="Momae",e[e.Vok=8]="Vok",e[e.Roka=9]="Roka",e[e.Cho=10]="Cho",e[e.Kor=11]="Kor"}(n||(i.AnimalYear=n={})),function(e){e[e.SamridhiSak=0]="SamridhiSak",e[e.AekSak=1]="AekSak",e[e.ToSak=2]="ToSak",e[e.TreiSak=3]="TreiSak",e[e.ChattvaSak=4]="ChattvaSak",e[e.PanchaSak=5]="PanchaSak",e[e.ChhaSak=6]="ChhaSak",e[e.SappaSak=7]="SappaSak",e[e.AtthaSak=8]="AtthaSak",e[e.NappaSak=9]="NappaSak"}(t||(i.Sak=t={})),function(e){e[e.Sunday=0]="Sunday",e[e.Monday=1]="Monday",e[e.Tuesday=2]="Tuesday",e[e.Wednesday=3]="Wednesday",e[e.Thursday=4]="Thursday",e[e.Friday=5]="Friday",e[e.Saturday=6]="Saturday"}(r||(i.DayOfWeek=r={}));const h=["មិគសិរ","បុស្ស","មាឃ","ផល្គុន","ចេត្រ","ពិសាខ","ជេស្ឋ","អាសាឍ","ស្រាពណ៍","ភទ្របទ","អស្សុជ","កត្ដិក","បឋមាសាឍ","ទុតិយាសាឍ"],s=["មករា","កុម្ភៈ","មីនា","មេសា","ឧសភា","មិថុនា","កក្កដា","សីហា","កញ្ញា","តុលា","វិច្ឆិកា","ធ្នូ"],m=["មក","កម","មន","មស","ឧស","មថ","កដ","សហ","កញ","តល","វក","ធន"],u=["មិ","បុ","មា","ផល","ចេ","ពិ","ជេ","អា","ស្រ","ភ","អ","ក","បឋ","ទុតិ"],f=["ជូត","ឆ្លូវ","ខាល","ថោះ","រោង","ម្សាញ់","មមី","មមែ","វក","រកា","ច","កុរ"],d=["🐀","🐂","🐅","🐇","🐉","🐍","🐎","🐐","🐒","🐓","🐕","🐖"],c=["សំរឹទ្ធិស័ក","ឯកស័ក","ទោស័ក","ត្រីស័ក","ចត្វាស័ក","បញ្ចស័ក","ឆស័ក","សប្តស័ក","អដ្ឋស័ក","នព្វស័ក"],l=["អាទិត្យ","ចន្ទ","អង្គារ","ពុធ","ព្រហស្បតិ៍","សុក្រ","សៅរ៍"],y=["អា","ច","អ","ព","ព្រ","សុ","ស"],b=["កើត","រោច"],k=["ក","រ"],g=["᧡","᧢","᧣","᧤","᧥","᧦","᧧","᧨","᧩","᧪","᧫","᧬","᧭","᧮","᧯","᧱","᧲","᧳","᧴","᧵","᧶","᧷","᧸","᧹","᧺","᧻","᧼","᧽","᧾","᧿"],w={0:"០",1:"១",2:"២",3:"៣",4:"៤",5:"៥",6:"៦",7:"៧",8:"៨",9:"៩"},M={1879:"12-04-1879 11:36",1897:"13-04-1897 02:00",2011:"14-04-2011 13:12",2012:"14-04-2012 19:11",2013:"14-04-2013 02:12",2014:"14-04-2014 08:07",2015:"14-04-2015 14:02",2024:"13-04-2024 22:17"};function N(e){return String(e).replace(/\d/g,e=>w[e])}function Y(e,a){return 2===a&&function(e){return e%4==0&&e%100!=0||e%400==0}(e)?29:[31,28,31,30,31,30,31,31,30,31,30,31][a-1]}function P(e,a,n){const t=Math.floor((14-a)/12),r=e+4800-t,o=a+12*t-3;return n+Math.floor((153*o+2)/5)+365*r+Math.floor(r/4)-Math.floor(r/100)+Math.floor(r/400)-32045}function I(e){const a=e+32044,n=Math.floor((4*a+3)/146097),t=a-Math.floor(146097*n/4),r=Math.floor((4*t+3)/1461),o=t-Math.floor(1461*r/4),i=Math.floor((5*o+2)/153),h=o-Math.floor((153*i+2)/5)+1,s=i+3-12*Math.floor(i/10);return{year:100*n+r-4800+Math.floor(i/10),month:s,day:h}}function p(e){return Math.floor((292207*e+499)/800)+4}function D(e){return(11*p(e)+25)%692}function S(e){const a=p(e);return(Math.floor((11*a+25)/692)+a+29)%30}function v(e){const a=D(e),n=function(e){return function(e){return 800-function(e){return(292207*e+499)%800}(e)}(e)<=207}(e);return 0===a&&137===D(e-1)||(n?a<127:(137!==a||0!==D(e+1))&&a<138)}function x(e){const a=S(e),n=S(e+1);return(25!==a||5!==n)&&(24===a&&6===n||a>=25||a<6)}function $(e){if(x(e))return 1;if(v(e))return 2;if(x(e-1)){let a=e-1;for(;;){if(v(a))return 2;if(a-=1,!x(a))return 0}}return 0}function W(e,n){const t=$(n),r=e;return r===a.Jesth&&2===t?30:r===a.Pathamasadh||r===a.Tutiyasadh?1===t?30:0:r%2==0?29:30}function E(e){const a=$(e);return 1===a?384:2===a?355:354}function O(e,n){const t=$(n),r=e;return r===a.Jesth&&1===t?a.Pathamasadh:r===a.Kadeuk?a.Migasir:r===a.Pathamasadh?a.Tutiyasadh:r===a.Tutiyasadh?a.Srap:r+1}function T(e,n){const t=$(n),r=e;return r===a.Migasir?a.Kadeuk:r===a.Srap&&1===t?a.Tutiyasadh:r===a.Tutiyasadh?a.Pathamasadh:r===a.Pathamasadh?a.Jesth:r-1}function A(e){const a=292207*e+373;return Math.floor(a/800)+1}function j(e){return(11*A(e)+650)%692}function C(e){return 800-(292207*e+373)%800}function K(e){const a=A(e),n=11*a+650;return(a+Math.floor(n/692))%30}function J(e){const a=function(e){return C(e)<=207}(e-1)?[363,364,365,366]:[362,363,364,365],n=a.map(a=>function(e,a){const n=800*a+C(e-1),t=n%24350,r=t%811,o=1800*Math.floor(n/24350)+60*Math.floor(t/811)+(Math.floor(r/14)-3);let i=o-4800;o<4800&&(i+=21600);const h=Math.floor(i/1800);let s=-1;[0,1,2].includes(h)?s=h:[3,4,5].includes(h)?s=10800-i:[6,7,8].includes(h)?s=i-10800:[9,10,11].includes(h)&&(s=21600-i);const m=Math.floor(s/1800),u=Math.floor(s%1800/60),f=s%60;let d,c;u>=15?(d=2*m+1,c=60*(u-15)+f):(d=2*m,c=60*u+f);const l=d<=5?[{multiplicity:35,chhaya:0},{multiplicity:32,chhaya:35},{multiplicity:27,chhaya:67},{multiplicity:22,chhaya:94},{multiplicity:13,chhaya:116},{multiplicity:5,chhaya:129}][d]:{multiplicity:0,chhaya:134},y=Math.floor(c*l.multiplicity/900)+l.chhaya,b=h<=5?o-y:o+y;return{sunInaugurationAsLibda:b,reasey:Math.floor(b/1800),angsar:Math.floor(b%1800/60),libda:b%60}}(e,a));let t={hour:0,minute:0};for(const e of n)if(0===e.angsar){const a=1440-24*e.libda;t={hour:Math.floor(a/60)%24,minute:a%60};break}return{timeOfNewYear:t,numberOfVanabatDays:0===n[0].angsar?2:1,newYearsDaySotins:n}}class _{constructor(e,a,n,t){this.day=e,this.moonPhase=a,this.monthIndex=n,this.beYear=t}getDayNumber(){return this.moonPhase===e.Waxing?this.day-1:this.day-1+15}static fromDayNumber(a){return a<15?{day:a+1,moonPhase:e.Waxing}:{day:a-15+1,moonPhase:e.Waning}}addDays(n){if(0===n)return this;if(n<0)return this.subtractDays(-n);let t=new _(this.day,this.moonPhase,this.monthIndex,this.beYear),r=n;for(;r>0;){const n=W(t.monthIndex,t.beYear),o=t.getDayNumber(),i=n-1-o;if(r<=i){const n=o+r,i=_.fromDayNumber(n);let h=t.beYear;t.monthIndex===a.Pisakh&&t.moonPhase===e.Waxing&&i.moonPhase===e.Waning&&h++,t=new _(i.day,i.moonPhase,t.monthIndex,h),r=0}else{r-=i+1;const n=O(t.monthIndex,t.beYear),o=t.monthIndex===a.Cheit?t.beYear+1:t.beYear;t=new _(1,e.Waxing,n,o)}}return t}subtractDays(n){if(0===n)return this;let t=new _(this.day,this.moonPhase,this.monthIndex,this.beYear),r=n;for(;r>0;){const n=t.getDayNumber();if(r<=n){const o=n-r,i=_.fromDayNumber(o);let h=t.beYear;t.monthIndex===a.Pisakh&&t.moonPhase===e.Waning&&i.moonPhase===e.Waxing&&h--,t=new _(i.day,i.moonPhase,t.monthIndex,h),r=0}else{r-=n+1;const e=T(t.monthIndex,t.beYear),o=t.monthIndex===a.Pisakh?t.beYear-1:t.beYear,i=W(e,o),h=_.fromDayNumber(i-1);t=new _(h.day,h.moonPhase,e,o)}}return t}toString(){return`${this.day}${b[this.moonPhase]} ខែ${h[this.monthIndex]} ព.ស.${this.beYear}`}}function L(e,a){return a<=4?e+543:e+544}const R={},F={};function B(e,n=!1){if(R[e])return R[e];for(let n=4;n<=6;n++){const t=new Date(e,n,0).getDate();for(let r=1;r<=t;r++){const t=G(e,n,r,12,0,0,!0);if(t.khmer.monthIndex===a.Pisakh&&15===t._khmerDateObj.getDayNumber()){const a=new Date(e,n-1,r,0,0,0,0).getTime();return R[e]=a,a}}}const t=new Date(e,3,15,0,0,0,0).getTime();return R[e]=t,t}function G(e,a,n,t=0,r=0,o=0,i=!1){let s=P(1900,1,1);let m=1,u=0,d=P(e,a,n)-s;if(d>0)for(;;){const e=I(s),a=E(L(e.year+1,e.month));if(!(d>a))break;d-=a,s+=a}else if(d<0)for(;d<0;){const e=I(s),a=E(L(e.year,e.month));d+=a,s-=a}for(;d>0;){const e=I(s),a=L(e.year,e.month),n=W(m,a);if(!(d>n))break;d-=n,s+=n,m=O(m,a)}u=d;const y=L(e,a),k=W(m,y);u>=k&&(u%=k,m=O(m,y));const g=_.fromDayNumber(u);let w;if(i)w=a<=4?e+543:e+544;else{w=new Date(e,a-1,n,t,r,o).getTime()>=B(e)?e+544:e+543}let M=function(e){return e-1182}(w),N=((w+4)%12+12)%12;if(!i){const i=V(e),h=new Date(e,a-1,n,t,r,o).getTime(),s=B(e);h>=i.newYearMoment.getTime()&&h<=s&&(N=(N+1)%12),h>=i.lerngSakMoment.getTime()&&h<=s&&M++}const Y=(M%10+10)%10,p=function(e,a,n){return(P(e,a,n)+1)%7}(e,a,n),D=new _(g.day,g.moonPhase,m,w);return{gregorian:{year:e,month:a,day:n,hour:t,minute:r,second:o,dayOfWeek:p},khmer:{day:g.day,moonPhase:g.moonPhase,moonPhaseName:b[g.moonPhase],monthIndex:m,monthName:h[m],beYear:w,jsYear:M,animalYear:N,animalYearName:f[N],sak:Y,sakName:c[Y],dayOfWeek:p,dayOfWeekName:l[p]},_khmerDateObj:D}}function H(n,t,r,o){!function(e,a,n,t){if("number"!=typeof e||isNaN(e))throw new Error(`Invalid day: ${e}. Day must be a valid number.`);if("number"!=typeof a||isNaN(a))throw new Error(`Invalid moonPhase: ${a}. moonPhase must be a valid number.`);if("number"!=typeof n||isNaN(n))throw new Error(`Invalid monthIndex: ${n}. monthIndex must be a valid number.`);if("number"!=typeof t||isNaN(t))throw new Error(`Invalid beYear: ${t}. beYear must be a valid number.`);if(e<1||e>15)throw new Error(`Invalid day: ${e}. Lunar day must be between 1 and 15.`);if(0!==a&&1!==a)throw new Error(`Invalid moonPhase: ${a}. moonPhase must be 0 (Waxing/កើត) or 1 (Waning/រោច).`);if(n<0||n>13)throw new Error(`Invalid monthIndex: ${n}. monthIndex must be between 0 and 13.`);if(t<2e3||t>3e3)throw new Error(`Invalid beYear: ${t}. beYear must be between 2000 and 3000.`)}(n,t,r,o);const i=t,h=r,s=o-544,m=s+2;let u=[];for(let t=s-2;t<=m;t++)for(let r=1;r<=12;r++){const s=Y(t,r);for(let m=1;m<=s;m++){const s=h===a.Pisakh&&(15===n&&i===e.Waxing||1===n&&i===e.Waning)?[0,6,12,18,23]:[0];for(const e of s){const a=G(t,r,m,e,0,0,!1);if(a.khmer.beYear===o&&a.khmer.monthIndex===h&&a.khmer.day===n&&a.khmer.moonPhase===i){u.push({year:t,month:r,day:m});break}}}}if(0===u.length)throw new Error(`Could not find Gregorian date for Khmer date: ${n} ${i===e.Waxing?"កើត":"រោច"} month ${h} BE ${o}`);if(u.length>1){const e=Math.min(...u.map(e=>Math.abs(e.year-s))),a=u.filter(a=>Math.abs(a.year-s)===e);if(1===a.length)return a[0];const t=a.filter(e=>{const a=G(e.year,e.month,e.day,12,0,0,!1);return a.khmer.beYear===o&&a.khmer.monthIndex===h&&a.khmer.day===n&&a.khmer.moonPhase===i});return t.length>0?t[0]:a[0]}return u[0]}function V(e){if(F[e])return F[e];const a=e-638;let n=J(a),t=K(a);const r=function(e){const a=K(e),n=K(e+1);return 24===a&&6===n||(25!==a||5!==n)&&(a>24||a<6)}(a-1),o=function(e){const a=j(e),n=j(e+1),t=j(e-1),r=C(e)<=207;return 0===a&&137===t||(r?a<127:(137!==a||0!==n)&&(!r&&a<138||137===t&&0===a))}(a-1);r&&o&&(t=(t+1)%30);const i=t>=6?t-1:t,h=t>=6?4:5,s=0===n.newYearsDaySotins[0].angsar?4:3,m={year:e,month:4,day:17},u=G(e,4,17,12,0,0,!0)._khmerDateObj,f=29*(u.monthIndex-4)+u.getDayNumber()-(29*(h-4)+i)+s-1;let d=P(m.year,m.month,m.day)-f;if(M[e]){const[a,t]=M[e].split(" "),[r,o,i]=a.split("-").map(Number),[h,s]=t.split(":").map(Number);n.timeOfNewYear={hour:h,minute:s},d=P(i,o,r)}const c=I(d),l=new Date(c.year,c.month-1,c.day,n.timeOfNewYear.hour,n.timeOfNewYear.minute),y=I(d+s-1),b={newYearMoment:l,lerngSakMoment:new Date(y.year,y.month-1,y.day,0,0,0),newYearInfo:{year:c.year,month:c.month,day:c.day,hour:n.timeOfNewYear.hour,minute:n.timeOfNewYear.minute}};return F[e]=b,b}function q(e,a,n,t=0,r=0,o=0){return function(e,a,n,t=0,r=0,o=0){if("number"!=typeof e||isNaN(e))throw new Error(`Invalid year: ${e}. Year must be a valid number.`);if("number"!=typeof a||isNaN(a))throw new Error(`Invalid month: ${a}. Month must be a valid number.`);if("number"!=typeof n||isNaN(n))throw new Error(`Invalid day: ${n}. Day must be a valid number.`);if("number"!=typeof t||isNaN(t))throw new Error(`Invalid hour: ${t}. Hour must be a valid number.`);if("number"!=typeof r||isNaN(r))throw new Error(`Invalid minute: ${r}. Minute must be a valid number.`);if("number"!=typeof o||isNaN(o))throw new Error(`Invalid second: ${o}. Second must be a valid number.`);if(a<1||a>12)throw new Error(`Invalid month: ${a}. Month must be between 1 and 12.`);const i=Y(e,a);if(n<1||n>i)throw new Error(`Invalid day: ${n}. ${["January","February","March","April","May","June","July","August","September","October","November","December"][a-1]} ${e} has ${i} days.`);if(t<0||t>23)throw new Error(`Invalid hour: ${t}. Hour must be between 0 and 23.`);if(r<0||r>59)throw new Error(`Invalid minute: ${r}. Minute must be between 0 and 59.`);if(o<0||o>59)throw new Error(`Invalid second: ${o}. Second must be between 0 and 59.`)}(e,a,n,t,r,o),G(e,a,n,t,r,o,!1)}function z(e,a,n,t=0,r=0,o=0){return q(e,a,n,t,r,o)}function Q(e,a,n,t){return H(e,a,n,t)}function U(e){return function(e){return V(e).newYearInfo}(e)}function X(e,a){return function(e,a){if(!a){const{khmer:a}=e,n=`${a.day}${a.moonPhaseName}`;return N(`ថ្ងៃ${a.dayOfWeekName} ${n} ខែ${a.monthName} ឆ្នាំ${a.animalYearName} ${a.sakName} ពុទ្ធសករាជ ${a.beYear}`)}const n={W:()=>e.khmer.dayOfWeekName,w:()=>y[e.gregorian.dayOfWeek],d:()=>N(e.khmer.day),D:()=>N((e.khmer.day<10?"0":"")+e.khmer.day),dr:()=>e.khmer.day,Dr:()=>(e.khmer.day<10?"0":"")+e.khmer.day,ds:()=>N(e.gregorian.day),Ds:()=>N((e.gregorian.day<10?"0":"")+e.gregorian.day),dsr:()=>e.gregorian.day,Dsr:()=>(e.gregorian.day<10?"0":"")+e.gregorian.day,n:()=>k[e.khmer.moonPhase],N:()=>e.khmer.moonPhaseName,o:()=>g[e._khmerDateObj.getDayNumber()],m:()=>e.khmer.monthName,M:()=>s[e.gregorian.month-1],a:()=>e.khmer.animalYearName,as:()=>d[e.khmer.animalYear],e:()=>e.khmer.sakName,b:()=>N(e.khmer.beYear),br:()=>e.khmer.beYear,c:()=>N(e.gregorian.year),cr:()=>e.gregorian.year,j:()=>N(e.khmer.jsYear),jr:()=>e.khmer.jsYear,Ms:()=>m[e.gregorian.month-1],ms:()=>u[e.khmer.monthIndex]},t=Object.keys(n).sort((e,a)=>a.length-e.length),r=new RegExp(`\\[([^\\]]+)\\]|(${t.join("|")})`,"g");return a.replace(r,(e,a,t)=>{if(a)return a;const r=n[t]();return String(r)})}(e,a)}function Z(e){return function(e){if(!(e instanceof Date))throw new Error("Invalid input: Expected a Date object.");if(isNaN(e.getTime()))throw new Error("Invalid Date object: Date is not a valid date.")}(e),q(e.getFullYear(),e.getMonth()+1,e.getDate(),e.getHours(),e.getMinutes(),e.getSeconds())}function ee(e,a,n,t){const r=H(e,a,n,t);return new Date(r.year,r.month-1,r.day)}return i.constants={LunarMonths:{"មិគសិរ":0,"បុស្ស":1,"មាឃ":2,"ផល្គុន":3,"ចេត្រ":4,"ពិសាខ":5,"ជេស្ឋ":6,"អាសាឍ":7,"ស្រាពណ៍":8,"ភទ្របទ":9,"អស្សុជ":10,"កត្ដិក":11,"បឋមាសាឍ":12,"ទុតិយាសាឍ":13},LunarMonthNames:h,SolarMonthNames:s,SolarMonthAbbreviationNames:m,LunarMonthAbbreviationNames:u,AnimalYearNames:f,AnimalYearEmojis:d,SakNames:c,WeekdayNames:l,MoonPhaseNames:b},i.default={fromGregorian:z,fromKhmer:Q,getNewYear:U,format:X,fromDate:Z,toDate:ee,constants:i.constants,MoonPhase:e,MonthIndex:a,AnimalYear:n,Sak:t,DayOfWeek:r},o});
+;return module.exports})();</script>
+<script>
+const KH=n=>String(n).replace(/\d/g,d=>'០១២៣៤៥៦៧៨៩'[d]),E=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const SM=MKH.SolarMonthNames||MKH.constants.SolarMonthNames,WK=['អាទិត្យ','ចន្ទ','អង្គារ','ពុធ','ព្រហ','សុក្រ','សៅរ៍'];
+const pad=n=>String(n).padStart(2,'0'),isoD=D=>D.getFullYear()+'-'+pad(D.getMonth()+1)+'-'+pad(D.getDate()),dd=(D,n)=>new Date(D.getFullYear(),D.getMonth(),D.getDate()+n);
+const LC={},L=D=>LC[isoD(D)]||(LC[isoD(D)]=MKH.fromGregorian(D.getFullYear(),D.getMonth()+1,D.getDate()).khmer);
+const holy=D=>{const k=L(D);return k.day==8||k.day==15||(k.day==14&&L(dd(D,1)).day==1)};
+// official 2026 public holidays (Sub-Decree 167) = [month, day, name, 1 public | 0 observance]; lunar ones are computed below
+const FX=[[1,1,'ទិវាចូលឆ្នាំសកល',1],[1,7,'ទិវាជ័យជម្នះលើរបបប្រល័យពូជសាសន៍',1],[3,8,'ទិវាអន្តរជាតិនារី',1],[5,1,'ទិវាពលកម្មអន្តរជាតិ',1],[5,14,'ព្រះរាជពិធីបុណ្យចម្រើនព្រះជន្ម ព្រះមហាក្សត្រ',1],[6,18,'ព្រះរាជពិធីបុណ្យចម្រើនព្រះជន្ម ព្រះមហាក្សត្រី',1],[9,24,'ទិវារដ្ឋធម្មនុញ្ញ',1],[10,15,'ទិវាគោរពព្រះវិញ្ញាណក្ខន្ធ ព្រះបរមរតនកោដ្ឋ',1],[10,29,'ព្រះរាជពិធីគ្រងព្រះបរមរាជសម្បត្តិ',1],[11,9,'ពិធីបុណ្យឯករាជ្យជាតិ',1],[12,29,'ទិវាសន្តិភាពនៅកម្ពុជា',1],[10,1,'ទិវាមនុស្សចាស់កម្ពុជា និងអន្តរជាតិ',0],[10,5,"ទិវាគ្រូបង្រៀនពិភពលោក (World Teacher's Day)",0],[10,23,'ទិវាកិច្ចព្រមព្រៀងសន្តិភាពទីក្រុងប៉ារីស',0]];
+const HY={};
+function hol(y){if(HY[y])return HY[y];const h={},add=(m,d,n,p)=>{const k=y+'-'+pad(m)+'-'+pad(d);(h[k]=h[k]||[]).push({n:n,p:p})};
+ FX.forEach(f=>add(f[0],f[1],f[2],f[3]));
+ const ny=MKH.getNewYear(y);['១ មហាសង្ក្រាន្ត','២ វារៈវ័នបត','៣ ថ្ងៃឡើងស័ក'].forEach((t,i)=>{const D=new Date(y,ny.month-1,ny.day+i);add(D.getMonth()+1,D.getDate(),'ចូលឆ្នាំថ្មី ថ្ងៃទី'+t,1)});
+ for(let i=0;i<366;i++){const D=new Date(y,0,1+i);if(D.getFullYear()!==y)break;const k=L(D),a=k.monthIndex,p=k.moonPhase,d=k.day,mo=D.getMonth()+1,da=D.getDate();
+  if(a==5&&!p&&d==15)add(mo,da,'ព្រះរាជពិធីបុណ្យវិសាខបូជា',1);
+  if(a==5&&p&&d==4)add(mo,da,'ព្រះរាជពិធីច្រត់ព្រះនង្គ័ល',1);
+  if(a==9&&p&&d>13||a==10&&!p&&d==1)add(mo,da,'ពិធីបុណ្យភ្ជុំបិណ្ឌ',1);else if(a==9&&p)add(mo,da,'បិណ្ឌ '+KH(d)+' (Ben '+d+')',0);
+  if(a==11&&(!p&&d>13||p&&d==1))add(mo,da,'ព្រះរាជពិធីបុណ្យអុំទូក បណ្តែតប្រទីប និងសំពះព្រះខែ អកអំបុក',1);
+  if(a==10&&!p&&d==15)add(mo,da,'ចេញព្រះវស្សា',0);if(a==10&&p&&d==1)add(mo,da,'កឋិនកាល (Kathen)',0);if(a==2&&!p&&d==15)add(mo,da,'ព្រះរាជពិធីបុណ្យមាឃបូជា',0)}
+ return HY[y]=h}
+/* plans + alerts: saved on this device */
+let PLS=[],PK=null;
+function loadPlans(){let u='';try{u=sessionStorage.getItem('cvc_u')||''}catch(e){}
+ PK='cvc_plans_'+(u||'anon');PLS=[];
+ try{let r=localStorage.getItem(PK);
+  if(r===null){const old=localStorage.getItem('cvc_plans');if(old!==null){r=old;localStorage.setItem(PK,old);localStorage.removeItem('cvc_plans')}}   // one-time move of the old shared list to the first user who signs in
+  PLS=JSON.parse(r||'[]')}catch(e){PLS=[]}}
+let _syncT=null,DEL=[];function syncPlans(){clearTimeout(_syncT);_syncT=setTimeout(()=>{try{if(!PK||!$('alertb')||!$('alertb').dataset.on)return;const del=DEL.splice(0);call({action:'syncplans',del:del,plans:PLS.map(p=>({id:p.id,d:p.d,t:p.t||'',title:p.title,l:p.l||0,done:p.done?1:0}))}).then(d=>{if(!d||!d.ok)DEL=del.concat(DEL)}).catch(()=>{DEL=del.concat(DEL)})}catch(e){}},2000)}
+const savePl=()=>{if(!PK)return;try{localStorage.setItem(PK,JSON.stringify(PLS))}catch(e){}syncPlans()},due=p=>new Date(p.d+'T'+(p.t||'08:00')).getTime();
+function notify(t,b,tag,p){const m=add('bot',t+'\n'+b);wave();
+ if(p)['✔ ធ្វើរួច','⏰ +១០ នាទី'].forEach((x,i)=>{const bt=document.createElement('button');bt.type='button';bt.className='spk';bt.textContent=x;
+  bt.onclick=()=>{if(!i)p.done=1;else{p.a=0;p.sn=Date.now()+6e5}savePl();m.querySelectorAll('.spk').forEach(z=>z.remove());if($('cal').classList.contains('on'))draw()};m.appendChild(bt)});
+ try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
+ if('Notification' in window&&Notification.permission==='granted'){const o={body:b,icon:'icon-192.png',tag:tag,renotify:true};
+  navigator.serviceWorker&&navigator.serviceWorker.getRegistration().then(r=>r?r.showNotification(t,o):new Notification(t,o)).catch(()=>{})}}
+function chk(){if($('chat').style.display==='none')return;const now=Date.now();let ch=0;
+ PLS.forEach(p=>{if(p.done||p.a)return;const du=due(p);if((p.sn||du-p.l*6e4)>now)return;p.a=1;ch=1;
+  notify(now-du>6e4?'⏰ ដល់ពេលហើយ / Time is up':'🔔 ជិតដល់ពេលហើយ / Coming up',p.title+(p.t?' · '+p.t:'')+' · '+p.d,p.id,p)});
+ const tm=dd(new Date(),1),key=isoD(tm),hs=(hol(tm.getFullYear())[key]||[]).filter(h=>h.p);let hn='';try{hn=localStorage.getItem('cvc_hn')}catch(e){}
+ if(hs.length&&hn!==key){try{localStorage.setItem('cvc_hn',key)}catch(e){}notify('📅 ស្អែកជាថ្ងៃឈប់សម្រាក',hs.map(h=>h.n).join(', '),'h'+key)}
+ if(ch)savePl()}
+setInterval(chk,3e4);document.addEventListener('visibilitychange',()=>{if(!document.hidden)chk()});
+/* calendar view */
+let TD,sel,cy,cm;
+function draw(){const y=cy,m=cm,f1=L(new Date(y,m-1,1)),fl=L(new Date(y,m,0));
+ $('ct').innerHTML=SM[m-1]+' '+new Date(y,m-1,1).toLocaleString('en',{month:'long'})+' '+y+'<small>'+f1.monthName+(fl.monthName!==f1.monthName?' - '+fl.monthName:'')+' ឆ្នាំ'+fl.animalYearName+' ព.ស. '+KH(fl.beYear)+'</small>';
+ $('cbell').textContent=('Notification' in window&&Notification.permission==='granted')?'🔔':'🔕';
+ const s=new Date(y,m-1,1);s.setDate(1-s.getDay());let h='';
+ for(let i=0;i<42;i++){const D=dd(s,i);if(i%7==0&&i>=35&&D.getMonth()!==m-1)break;
+  const k=L(D),id=isoD(D),ev=(hol(D.getFullYear())[id]||[]).concat(PLS.filter(p=>p.d===id).map(p=>({n:(p.t?p.t+' ':'')+p.title,p:2}))),ph=ev.some(e=>e.p===1),hy=holy(D),c=e=>e.p===1?'h':e.p===2?'p':'o';
+  h+='<div class="cd'+(D.getMonth()!==m-1?' o':'')+(D.getDay()==0?' su':'')+(id===TD?' td':'')+(id===sel?' sel':'')+(ph?' ph':ev.length?' ev':'')+'" data-d="'+id+'"><span class="n">'+D.getDate()+'</span>'+(hy?'🧘':'')+'<div>'+KH(k.day)+' '+(k.moonPhase?'រោច':'កើត')+'</div>'+(k.day==14&&!hy?'<div>ថ្ងៃកោរ</div>':'')+ev.slice(0,2).map(e=>'<div class="pl '+c(e)+'">'+E(e.n)+'</div>').join('')+'<div class="dots">'+ev.map(e=>'<i class="'+c(e)+'"></i>').join('')+'</div></div>'}
+ $('cgd').innerHTML=h;panel()}
+function panel(){const a=sel.split('-').map(Number),ev=hol(a[0])[sel]||[],ps=PLS.filter(p=>p.d===sel).sort((x,z)=>(x.t||'').localeCompare(z.t||''));
+ $('cpan').innerHTML='<div class="pt">'+E(MKH.format(MKH.fromGregorian(a[0],a[1],a[2])))+' ត្រូវនឹង ថ្ងៃទី'+KH(a[2])+' ខែ'+SM[a[1]-1]+' ឆ្នាំ'+KH(a[0])+'</div>'
+ +ev.map(e=>'<div class="pr"><span class="pl '+(e.p?'h':'o')+'">'+E(e.n)+'</span></div>').join('')
+ +ps.map(p=>'<div class="pr'+(p.done?' dn':'')+'"><input type="checkbox" data-a="ck" data-i="'+p.id+'"'+(p.done?' checked':'')+'><span>'+(p.t?p.t+' · ':'')+E(p.title)+'</span><button type="button" data-a="rm" data-i="'+p.id+'">✕</button></div>').join('')
+ +'<div class="af"><input id="pt" placeholder="គម្រោង / Plan…"><input id="ptm" type="time"><select id="pl"><option value="0">ពេលដល់ម៉ោង</option><option value="10">មុន ១០ នាទី</option><option value="30">មុន ៣០ នាទី</option><option value="60">មុន ១ ម៉ោង</option><option value="1440">មុន ១ ថ្ងៃ</option></select><button type="button" data-a="add">＋ បន្ថែម</button></div>'}
+$('cal').addEventListener('click',e=>{const t=e.target.closest('[data-d],[data-a]');if(!t)return;
+ if(t.dataset.d){sel=t.dataset.d;const a=sel.split('-');cy=+a[0];cm=+a[1];draw();return}
+ const a=t.dataset.a,id=t.dataset.i;
+ if(a=='add'){const ti=$('pt').value.trim();if(!ti)return;const p={id:Date.now().toString(36),d:sel,t:$('ptm').value,title:ti,l:+$('pl').value,done:0,a:0};p.a=due(p)<=Date.now()?1:0;PLS.push(p);savePl();draw()}
+ if(a=='rm'){DEL.push(id);PLS=PLS.filter(p=>p.id!==id);savePl();draw()}
+ if(a=='ck'){const p=PLS.find(p=>p.id===id);if(p){p.done=t.checked?1:0;savePl();draw()}}});
+$('cgh').innerHTML=WK.map(w=>'<div class="cw">'+w+'</div>').join('');
+$('cpv').onclick=()=>{if(--cm<1){cm=12;cy--}draw()};$('cnx').onclick=()=>{if(++cm>12){cm=1;cy++}draw()};
+$('ctd').onclick=()=>{const T=new Date();cy=T.getFullYear();cm=T.getMonth()+1;sel=TD=isoD(T);draw()};
+$('cx').onclick=()=>$('cal').classList.remove('on');
+$('cbell').onclick=()=>{if('Notification' in window)Notification.requestPermission().then(draw);else alert('This browser has no notifications. Alerts will still appear in the chat.')};
+function openCal(){$('cal').classList.add('on');$('ctd').click()}
+$('calb').onclick=openCal;
+</script>
+</body>
+</html>
