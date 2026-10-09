@@ -1,16 +1,17 @@
 # Save as .github/workflows/push-alerts.yml in the repository that also contains send-push.js
-# Runs every day at 07:00 Phnom Penh time (= 00:00 UTC) and can also be started by hand (Actions tab > Run workflow).
-name: RC date alerts
+# Runs every 15 minutes between 07:00 and 20:45 Phnom Penh time (= 00:00-13:45 UTC) and can also be started by hand (Actions tab > Run workflow).
+# GitHub may start a run 5-30 minutes late; that is normal.
+name: RC date and task alerts
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '*/15 0-13 * * *'
   workflow_dispatch:
 
 jobs:
   send:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
@@ -35,8 +36,8 @@ jobs:
             echo "$n length: ${#v}"
             echo "$n=$v" >> "$GITHUB_ENV"
           done
-          # Fingerprint (first 8 characters of a hash): must equal the one printed by checkSecret() in Apps Script.
           echo "PUSH_SECRET fingerprint: $(printf '%s' "$PUSH_SECRET" | tr -d '[:space:]' | sha256sum | cut -c1-8)"
 
       # The cleaned values from the step above are used automatically here.
       - run: node send-push.js
+
