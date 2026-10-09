@@ -8,6 +8,11 @@ on:
     - cron: '*/15 0-13 * * *'
   workflow_dispatch:
 
+# Never run two at once (avoids a task being sent twice)
+concurrency:
+  group: push-alerts
+  cancel-in-progress: false
+
 jobs:
   send:
     runs-on: ubuntu-latest
