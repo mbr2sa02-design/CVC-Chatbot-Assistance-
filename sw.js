@@ -1,7 +1,7 @@
 // Caches only the app shell. Child data and logins always go to the network and are never stored.
 const V = 'cvc-v2', SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 // c.add() one by one: a missing file (e.g. icon-512.png) no longer stops the whole service worker from installing.
-self.addEventListener('install', e => e.waitUntil(caches.open(V).then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => {})))).then(() => self.skipWaiting())));
+self.addEventListener('install', e => e.waitUntil(caches.open(V7).then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => {})))).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(ks => Promise.all(ks.filter(k => k !== V).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => {
@@ -28,3 +28,6 @@ self.addEventListener('notificationclick', event => {
     return clients.openWindow(url);
   }));
 });
+   self.addEventListener('message', event => {
+     if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+   });
